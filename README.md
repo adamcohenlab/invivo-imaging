@@ -14,5 +14,7 @@ analysis pipeline code for in vivo voltage imaging, modified from [1]
 10.	Apply the updated spatial and background footprints to calculate the temporal traces from the full denoised movie
 
 References:
+
 [1] Buchanan, E. K. et al. Penalized matrix decomposition for denoising, compression, and improved demixing of functional imaging data. bioRxiv, 334706 (2018). 
+
 [2] Pnevmatikakis, E. A. & Giovannucci, A. NoRMCorre: An online algorithm for piecewise rigid motion correction of calcium imaging data. bioRxiv, 108514 (2017). 
