@@ -86,7 +86,7 @@ for idx = 1:nMovs
         out4 = zeros(size(mov));
         for j = 1:nepoch;
             tau = bdry(j,1):bdry(j,2);
-            [out4(:,:,tau), ~] = SeeResiduals(dmov(:,:,tau), [dXs(tau); dYs(tau); dXs(tau).^2; dYs(tau).^2], 1);
+            [out4(:,:,tau), ~] = SeeResiduals(dmov(:,:,tau), [dXs(tau); dYs(tau); dXs(tau).^2; dYs(tau).^2; dXs(tau) .* dYs(tau)], 1);
         end;
 
         saveastiff(out4,fullfile(data_dirs{idx},'motion_corrected.tif'));
