@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH -J denoise
+#SBATCH -o denoise.out
+#SBATCH -e denoise.err
+#SBATCH -N 1
+#SBATCH -c 1
+#SBATCH -t 0-06:00
+#SBATCH -p serial_requeue
+#SBATCH --mem=24000
+
+srun -n 1 python denoise.py
