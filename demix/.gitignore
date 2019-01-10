@@ -1,0 +1,19 @@
+*/.ipynb_checkpoints/*
+*/.ipynb_checkpoints/*
+*/.ipynb_checkpoints/*
+*/.ipynb_checkpoints/*
+wp
+results/
+data/
+.ipynb_*
+*.mp4
+logs.*
+<<<<<<< HEAD
+=======
+*.jpg
+*.fig
+>>>>>>> 42ba33aaf78f95a0ef6c9146e11cd424b131c64a
+*.png
+*.avi
+*.pdf/.ipynb_checkpoints/*
+*/.ipynb_checkpoints/*
