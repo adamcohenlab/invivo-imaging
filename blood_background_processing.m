@@ -91,3 +91,5 @@ fb = (U * S);
 figure(884);stackplot(ff);
 saveastiff(ff,fullfile(data_dirs{idx},'ff.tif'))
 saveastiff(fb,fullfile(data_dirs{idx},'fb.tif'))
+
+exit;

@@ -41,3 +41,5 @@ if exist(fullfile(data_dir,'reg_shifts.mat'),'file')
    
     saveastiff(out4,fullfile(data_dir,'motion_corrected.tif'));
 end
+
+exit;
