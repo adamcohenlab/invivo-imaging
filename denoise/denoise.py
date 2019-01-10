@@ -22,9 +22,11 @@ from skimage import io as imio
 
 import time
 
-if not os.path.isfile('./detr.tif'):
+data_dir = '../data/'
+
+if not os.path.isfile(data_dir + 'detr.tif'):
 	# load movie from tif
-	raw_mov = imio.imread('trimmed.tif').transpose(1,2,0)
+	raw_mov = imio.imread(data_dir + 'trimmed.tif').transpose(1,2,0)
 	raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
 
 	outliers = False # outliers already removed
@@ -53,17 +55,17 @@ if not os.path.isfile('./detr.tif'):
 						  (fov_height, fov_width, 1)))
 	mov_detr_nnorm = mov_detr_nnorm / Sn_image
 
-	imio.imsave("detr.tif", mov_detr)
-	imio.imsave("detr_nnorm.tif", mov_detr_nnorm)
-	imio.imsave("Sn_image.tif", Sn_image)
-	imio.imsave("trend.tif", mov - mov_detr)
+	imio.imsave(data_dir + "detr.tif", mov_detr)
+	imio.imsave(data_dir + "detr_nnorm.tif", mov_detr_nnorm)
+	imio.imsave(data_dir + "Sn_image.tif", Sn_image)
+	imio.imsave(data_dir + "trend.tif", mov - mov_detr)
 	print("Detrended movies saved\n")
 else:
-	mov_detr_nnorm = imio.imread('detr_nnorm.tif')
-	Sn_image = imio.imread("Sn_image.tif")
+	mov_detr_nnorm = imio.imread(data_dir + 'detr_nnorm.tif')
+	Sn_image = imio.imread(data_dir + "Sn_image.tif")
 	print("Detrended movies loaded\n")
 
-if not os.path.isfile('./denoised.tif'):
+if not os.path.isfile(data_dir + 'denoised.tif'):
 	def compute_thresh(samples, conf=5):
 		return np.percentile(samples, conf)
 	def tv_norm(image):
@@ -125,7 +127,7 @@ if not os.path.isfile('./denoised.tif'):
 	fov_height, fov_width, num_frames = mov.shape
 	num_pixels = fov_height * fov_width
 
-	blocks = io.loadmat('num_blocks.mat')
+	blocks = io.loadmat(data_dir + 'num_blocks.mat')
 	blocks = blocks['var'][0]
 	block_height = int(fov_height / blocks[0])
 	block_width = int(fov_width / blocks[1])
@@ -169,14 +171,14 @@ if not os.path.isfile('./denoised.tif'):
 
 	print("Denoising took: " + str(time.time()-start) + ' sec')
 
-	imio.imsave('denoised.tif',mov_denoised)
-	imio.imsave('PMD_residual.tif',mov - mov_denoised)
-	np.save('block_ranks.npy', block_ranks)
+	imio.imsave(data_dir + 'denoised.tif',mov_denoised)
+	imio.imsave(data_dir + 'PMD_residual.tif',mov - mov_denoised)
+	np.save(data_dir + 'block_ranks.npy', block_ranks)
 else:
-	mov_denoised = imio.imread('denoised.tif')
+	mov_denoised = imio.imread(data_dir + 'denoised.tif')
 	print('Denoised movie loaded\n')
-if not os.path.isfile('./denoised_15s.tif'):
-	imio.imsave('denoised_15s.tif',mov_denoised[:,:,:15000] * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
+if not os.path.isfile(data_dir + 'denoised_15s.tif'):
+	imio.imsave(data_dir + 'denoised_15s.tif',mov_denoised[:,:,:15000] * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
 	print('Denoised snippet saved\n')
 
 print('Finished\n')
