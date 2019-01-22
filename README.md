@@ -13,6 +13,8 @@ analysis pipeline code for in vivo voltage imaging, modified from [1]
 9.	Regress the spatial footprint of cells out of the background (using a constant intercept term) to update spatial footprint of cells and background
 10.	Apply the updated spatial and background footprints to calculate the temporal traces from the full denoised movie
 
+Detailed instructions for use on Harvard's Odyssey cluster: https://docs.google.com/document/d/1dV4yBQQuKRmscEwlC_2DaNGKz9M_jCuN6qnOgfYe2ew/edit?usp=sharing
+
 References:
 
 [1] Buchanan, E. K. et al. Penalized matrix decomposition for denoising, compression, and improved demixing of functional imaging data. bioRxiv, 334706 (2018). 
