@@ -25,9 +25,9 @@ import time, math
 data_dir = sys.argv[1]
 out_dir = sys.argv[3]
 mov_in = sys.argv[2]
-detr_spacing = sys.argv[4]
-rblocks = sys.argv[5]
-cblocks = sys.argv[6]
+detr_spacing = int(sys.argv[4])
+rblocks = int(sys.argv[5])
+cblocks = int(sys.argv[6])
 
 if not os.path.isfile(out_dir + '/detr.tif'):
 	if mov_in[-4:] == '.tif':

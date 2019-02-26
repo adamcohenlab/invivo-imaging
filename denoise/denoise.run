@@ -8,4 +8,4 @@
 #SBATCH -p serial_requeue
 #SBATCH --mem=24000
 
-srun -n 1 python denoise.py
+srun -n 1 python denoise.py $1 $2 $3 $4 $5 $6
