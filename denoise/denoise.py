@@ -44,7 +44,7 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 		ncols = params[1]
 		raw_mov = np.reshape(raw_mov,(-1, nrows, ncols)).transpose(1,2,0)
 	else:
-		raise ValueError('Only .tif and .bin files supported for input.')
+		raise ValueError('File: ' + mov_in + ' invalid. Only .tif and .bin files supported for input.')
 
 	raw_mov = raw_mov[math.floor((nrows % (2 * rblocks))/2):-math.ceil((nrows % (2 * rblocks))/2),math.floor((ncols % (2 * cblocks))/2):-math.ceil((ncols % (2 * cblocks))/2),:]
 
