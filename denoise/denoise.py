@@ -45,8 +45,13 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 		raw_mov = np.reshape(raw_mov,(-1, nrows, ncols)).transpose(1,2,0)
 	else:
 		raise ValueError('File: ' + mov_in + ' invalid. Only .tif and .bin files supported for input.')
+	row_cut_lower = math.floor((nrows % (2 * rblocks))/2)
+	row_cut_upper = raw_mov.shape[0]-math.ceil((nrows % (2 * rblocks))/2)
+	col_cut_lower = math.floor((ncols % (2 * cblocks))/2)
+	col_cut_upper = raw_mov.shape[1]-math.ceil((ncols % (2 * cblocks))/2)
+	raw_mov = raw_mov[row_cut_lower:row_cut_upper,col_cut_lower:col_cut_upper,:]
 
-	raw_mov = raw_mov[math.floor((nrows % (2 * rblocks))/2):-math.ceil((nrows % (2 * rblocks))/2),math.floor((ncols % (2 * cblocks))/2):-math.ceil((ncols % (2 * cblocks))/2),:]
+	print('Movie size: ' + raw_mov.shape + '\n')
 
 	raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
 
