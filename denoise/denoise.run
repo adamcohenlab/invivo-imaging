@@ -5,7 +5,7 @@
 #SBATCH -N 1
 #SBATCH -c 8
 #SBATCH -t 0-06:00
-#SBATCH -p serial_requeue
+#SBATCH -p shared
 #SBATCH --mem=32000
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
