@@ -49,7 +49,7 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 	row_cut_upper = raw_mov.shape[0]-math.ceil((nrows % (2 * rblocks))/2)
 	col_cut_lower = math.floor((ncols % (2 * cblocks))/2)
 	col_cut_upper = raw_mov.shape[1]-math.ceil((ncols % (2 * cblocks))/2)
-	raw_mov = raw_mov[row_cut_lower:row_cut_upper,col_cut_lower:col_cut_upper,:]
+	raw_mov = raw_mov[row_cut_lower:row_cut_upper,col_cut_lower:col_cut_upper,:8000]
 
 	print('Movie size: {0}\n'.format(raw_mov.shape))
 
