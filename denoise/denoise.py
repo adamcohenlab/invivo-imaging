@@ -210,7 +210,7 @@ if not os.path.isfile(out_dir + '/denoised.tif'):
 	imio.imsave(out_dir + '/PMD_residual.tif',mov - mov_denoised)
 	np.save(out_dir + '/block_ranks.npy', block_ranks)
 else:
-	mov_denoised = imio.imread(out_dir + 'denoised.tif')
+	mov_denoised = imio.imread(out_dir + '/denoised.tif')
 	io.savemat(out_dir + '/denoised.mat',{'denoised':mov_denoised})
 	imio.imsave(out_dir + '/PMD_residual.tif',mov - mov_denoised)
 	np.save(out_dir + '/block_ranks.npy', block_ranks)
