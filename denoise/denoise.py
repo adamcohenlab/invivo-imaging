@@ -45,15 +45,23 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 		raw_mov = np.reshape(raw_mov,(-1, nrows, ncols)).transpose(1,2,0)
 	else:
 		raise ValueError('File: ' + mov_in + ' invalid. Only .tif and .bin files supported for input.')
+
+	######## PUT MOVIE TRIMMING HERE #######
+
 	row_cut_lower = math.floor((nrows % (2 * rblocks))/2)
 	row_cut_upper = raw_mov.shape[0]-math.ceil((nrows % (2 * rblocks))/2)
 	col_cut_lower = math.floor((ncols % (2 * cblocks))/2)
 	col_cut_upper = raw_mov.shape[1]-math.ceil((ncols % (2 * cblocks))/2)
-	raw_mov = raw_mov[row_cut_lower:row_cut_upper,col_cut_lower:col_cut_upper,:8000]
+	raw_mov = raw_mov[row_cut_lower:row_cut_upper,col_cut_lower:col_cut_upper,100:]
 
 	print('Movie size: {0}\n'.format(raw_mov.shape))
 
-	raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
+	if len(sys.argv) <= 7 or sys.argv[7] == ''
+		raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
+	else
+		wf = np.fromfile(data_dir + sys.argv[7],dtype="float64")
+		raw_stim = (wf.newbyteorder().reshape(2,-1))[0,::10]
+		raw_stim = raw_stim[100:]
 
 	outliers = False # outliers already removed
 	print('Trimmed movie loaded\n')
@@ -198,7 +206,17 @@ if not os.path.isfile(out_dir + '/denoised.tif'):
 	print("Denoising took: " + str(time.time()-start) + ' sec')
 
 	imio.imsave(out_dir + '/denoised.tif',mov_denoised)
+	io.savemat(outdir + '/denoised.mat',{'denoised':mov_denoised})
 	imio.imsave(out_dir + '/PMD_residual.tif',mov - mov_denoised)
 	np.save(out_dir + '/block_ranks.npy', block_ranks)
+else:
+	mov_denoised = imio.imread(out_dir + 'denoised.tif')
+	print('Denoised movie loaded\n')
+if num_frames > 15000 and (not os.path.isfile(out_dir + 'denoised_15s.tif')):
+	imio.imsave(out_dir + 'denoised_15s.tif',mov_denoised[:,:,:15000] * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
+	print('Denoised snippet saved\n')
+
+
+
 
 print('Finished\n')
