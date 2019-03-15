@@ -58,7 +58,7 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 
 	if len(sys.argv) <= 7 or sys.argv[7] == '':
 		raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
-	else
+	else:
 		wf = np.fromfile(data_dir + sys.argv[7],dtype="float64")
 		raw_stim = (wf.newbyteorder().reshape(2,-1))[0,::10]
 		raw_stim = raw_stim[100:]
