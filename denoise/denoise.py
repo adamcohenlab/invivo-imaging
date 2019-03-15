@@ -211,9 +211,6 @@ if not os.path.isfile(out_dir + '/denoised.tif'):
 	np.save(out_dir + '/block_ranks.npy', block_ranks)
 else:
 	mov_denoised = imio.imread(out_dir + '/denoised.tif')
-	io.savemat(out_dir + '/denoised.mat',{'denoised':mov_denoised})
-	imio.imsave(out_dir + '/PMD_residual.tif',mov - mov_denoised)
-	np.save(out_dir + '/block_ranks.npy', block_ranks)
 	print('Denoised movie loaded\n')
 if num_frames > 15000 and (not os.path.isfile(out_dir + 'denoised_15s.tif')):
 	imio.imsave(out_dir + 'denoised_15s.tif',mov_denoised[:,:,:15000] * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
