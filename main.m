@@ -1,4 +1,4 @@
-labpath = '/Volumes/cohen_lab/Lab';
+labpath = '/n/cohen_lab/Lab';
 
 addpath(fullfile(labpath,'Labmembers','Michael Xie','in vivo data processing','quivvia','lib'));
 addpath(fullfile(labpath,'Computer Code','Image Processing'));
@@ -20,16 +20,16 @@ mov_in = "movReg.bin";
 detr_spacing = 750;
 row_blocks = 11;
 col_blocks = 4;
-stim_dir = fullfile('matlab wvfm','F','AOwaveforms.bin');
+stim_dir = fullfile('/','matlab wvfm','F','AOwaveforms.bin');
 
-run_command = sprintf('source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d ""%s""',...
+run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d ""%s""",...
     home, mov_in, output, detr_spacing, row_blocks, col_blocks,stim_dir);
 
-system(run_command)
+system(run_command);
 
 %% motion correction
-xShifts = reg_shifts(1,:);
-yShifts = reg_shifts(2,:);
+xShifts = reg_shifts(1,71:end);
+yShifts = reg_shifts(2,71:end);
 dX = xShifts - mean(xShifts);
 dY = yShifts - mean(yShifts);
 dXhp = dX - smooth(dX, 2000)';  % high pass filter
@@ -45,7 +45,7 @@ t = 1:nFrames;
 avgImg = mean(mov,3);
 dmov = mov - avgImg;
 
-dT = 5000;
+dT = detr_spacing;
 % First column is the start of each epoch, second column is the end
 bdry = [(1:dT:nFrames)', [(dT:dT:nFrames) nFrames]'];
 nepoch = size(bdry, 1);
@@ -62,17 +62,10 @@ fclose(fid);
 
 
 %% blood removal
-if exist(fullfile(output,'denoised_15s.tif'),'file')
-    denoised = double(vm(fullfile(output,'denoised_15s.tif'))); % change this to not rely on vm class
-else
-    denoised = double(vm(fullfile(output,'denoised.tif')));
-end
+figure(881); clf; moviefixsc(out4);
+refimg = max(out4(:,:,1000:2000),[],3);
 
-denoised = permute(denoised,[3 1 2]);
-figure(881); clf; moviefixsc(denoised);
-refimg = max(denoised(:,:,1000:2000),[],3);
-
-nframes = size(denoised, 3);
+nframes = size(out4, 3);
 
 figure(882); clf;
 imshow(refimg, [], 'InitialMagnification', 'fit')
@@ -104,7 +97,7 @@ while(npts > 0)
     nroi = nroi + 1;
 end
 
-mov = denoised.*repmat(inpoly==0, [1, 1, nframes]);
+mov = out4.*repmat(inpoly==0, [1, 1, nframes]);
 bloodmask = uint8(mean(mov,3) ~= 0);
 saveastiff(bloodmask,fullfile(output,'bloodmask.tif'))
 
