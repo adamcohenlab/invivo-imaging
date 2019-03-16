@@ -39,7 +39,6 @@ dYs = smooth(dYhp, 5)';
 
 
 mov = load(fullfile(output,'denoised.mat'));
-mov = shiftdim(mov.denoised, 2);
 [ySize, xSize, nFrames] = size(mov);
 t = 1:nFrames;
 
