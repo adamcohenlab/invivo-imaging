@@ -6,7 +6,7 @@
 #SBATCH -c 8
 #SBATCH -t 0-06:00
 #SBATCH -p shared
-#SBATCH --mem=32000
+#SBATCH --mem=64000
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 srun -c $SLURM_CPUS_PER_TASK python denoise.py "$1" "$2" "$3" $4 $5 $6 "$7"
