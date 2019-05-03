@@ -5,8 +5,16 @@ addpath(fullfile(labpath,'Computer Code','Image Processing'));
 addpath(fullfile(labpath,'Computer Code','Image Processing','NoRMCorre-master'));
 addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts', 'NoRMCorre-master'));
 
-home = fullfile(labpath,'Labmembers','Linlin Fan','In vivo','IVOP14','2018-06-03_D24','Vol img','slice2','FOV21','184947_F');
-output = fullfile(home,'PMD_output');
+%%
+% home = fullfile(labpath,'Labmembers/Linlin Fan/In vivo/IVOP14/2018-06-03_D24/Vol img/slice2/FOV21/185008_EW');
+% home = fullfile(labpath,'Labmembers/Linlin Fan/In vivo/IVOP21/2018-12-02/slice1/FOV6/195745_PuffTE2');
+% home = fullfile(labpath,'Labmembers/Linlin Fan/In vivo/IVOP21/2018-12-02/slice1/FOV14motion/204040_PuffTE2');
+% home = fullfile(labpath,'Data and Analysis/Electrochromic Protein/somArchon optopatch in vivo/NMFcorrection_MEX/IVOP21/2019-01-08/slice2/FOV4/161916_PuffTE2');
+
+% home = fullfile(labpath,'Labmembers','Linlin Fan','In vivo','IVOP14','2018-06-03_D24','Vol img','slice2','FOV21','184947_F');
+home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC1R1/2018-11-16_PC1R1-S1/slice1/FOV3/131943_FreeRun_Dilas-8V_488-OD1.0-Mask0-Pos22';
+
+output = fullfile(home,'PMD_output_MX');
 if ~exist(output,'dir')
     mkdir(output)
 end
@@ -17,17 +25,23 @@ save(fullfile(home,'reg_shifts.mat'),'reg_shifts');
 
 %% denoising
 mov_in = "movReg.bin";
-detr_spacing = 750;
-row_blocks = 11;
-col_blocks = 4;
-stim_dir = fullfile('/','matlab wvfm','F','AOwaveforms.bin');
+detr_spacing = 5000;
+row_blocks = 4;
+col_blocks = 2;
+stim_dir = [];...fullfile('/','matlab wvfm','PuffTE2','AOwaveforms.bin');
+    
+trunc_start = 1; % frame to start truncated movie
+trunc_length = 6000; % length of truncated movie
 
-run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d ""%s""",...
-    home, mov_in, output, detr_spacing, row_blocks, col_blocks,stim_dir);
+%%
+run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
+    home, mov_in, output, detr_spacing, row_blocks, col_blocks,...
+    trunc_start-1, trunc_length, stim_dir);
 
 system(run_command);
 
 %% motion correction
+load(fullfile(home,'reg_shifts.mat'));
 xShifts = reg_shifts(1,71:end);
 yShifts = reg_shifts(2,71:end);
 dX = xShifts - mean(xShifts);
@@ -38,9 +52,23 @@ dXs = smooth(dXhp, 5)';  % low-pass filter just to remove some jitter in the tra
 dYs = smooth(dYhp, 5)';
 
 
-mov = load(fullfile(output,'denoised.mat'));
+% mov = load(fullfile(output,'denoised.mat'));
+mov = shiftdim(double(vm(fullfile(output,'denoised.tif'))),2);
 [ySize, xSize, nFrames] = size(mov);
 t = 1:nFrames;
+
+% remove DMD refresh frames
+intens = squeeze(mean(mean(mov)));
+figure(880);
+intensS = intens - smooth(intens, 100);
+plot(intensS(100:end));title('pick threshold to remove frames');pause(1)
+Rem=input('Pick thres to remove frames   ');
+badFrames = find(intensS < Rem);
+mov(:,:,badFrames) = mov(:,:,badFrames - 1);
+intens1=squeeze(mean(mean(mov)));
+figure(880);clf;hold on
+plot(intens,'b')
+plot(intens1,'r');
 
 avgImg = mean(mov,3);
 dmov = mov - avgImg;
@@ -99,7 +127,7 @@ end
 
 mov = out4.*repmat(inpoly==0, [1, 1, nframes]);
 bloodmask = uint8(mean(mov,3) ~= 0);
-saveastiff(bloodmask,fullfile(output,'bloodmask.tif'))
+saveastiff(bloodmask,fullfile(output,'bloodmask.tif'));
 
 %% background selection
 refimg = max(mov(:,:,1000:2000),[],3);
