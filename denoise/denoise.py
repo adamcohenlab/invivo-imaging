@@ -118,6 +118,7 @@ else:
 if not os.path.isfile(out_dir + '/denoised.tif'):
 	Y = mov_detr_nnorm
 	d1, d2, T = Y.shape
+	t = trunc_length;
 
 	# Specify Decomp Parameters
 	bheight = 	int(d1 / rblocks)
