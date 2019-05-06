@@ -23,7 +23,7 @@ end
 reg_shifts = returnShifts(home);
 save(fullfile(home,'reg_shifts.mat'),'reg_shifts');
 
-%% denoising
+%% denoising parameters
 mov_in = "movReg.bin";
 detr_spacing = 5000;
 row_blocks = 4;
@@ -33,63 +33,21 @@ stim_dir = [];...fullfile('/','matlab wvfm','PuffTE2','AOwaveforms.bin');
 trunc_start = 1; % frame to start truncated movie
 trunc_length = 6000; % length of truncated movie
 
-%%
+%% denoising and motion correction
+
 run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
     home, mov_in, output, detr_spacing, row_blocks, col_blocks,...
     trunc_start-1, trunc_length, stim_dir);
 
 system(run_command);
 
-%% motion correction
-load(fullfile(home,'reg_shifts.mat'));
-xShifts = reg_shifts(1,71:end);
-yShifts = reg_shifts(2,71:end);
-dX = xShifts - mean(xShifts);
-dY = yShifts - mean(yShifts);
-dXhp = dX - smooth(dX, 2000)';  % high pass filter
-dYhp = dY - smooth(dY, 2000)';
-dXs = smooth(dXhp, 5)';  % low-pass filter just to remove some jitter in the tracking.  Not sure if necessary
-dYs = smooth(dYhp, 5)';
-
-
-% mov = load(fullfile(output,'denoised.mat'));
-mov = shiftdim(double(vm(fullfile(output,'denoised.tif'))),2);
-[ySize, xSize, nFrames] = size(mov);
-t = 1:nFrames;
-
-% remove DMD refresh frames
-intens = squeeze(mean(mean(mov)));
-figure(880);
-intensS = intens - smooth(intens, 100);
-plot(intensS(100:end));title('pick threshold to remove frames');pause(1)
-Rem=input('Pick thres to remove frames   ');
-badFrames = find(intensS < Rem);
-mov(:,:,badFrames) = mov(:,:,badFrames - 1);
-intens1=squeeze(mean(mean(mov)));
-figure(880);clf;hold on
-plot(intens,'b')
-plot(intens1,'r');
-
-avgImg = mean(mov,3);
-dmov = mov - avgImg;
-
-dT = detr_spacing;
-% First column is the start of each epoch, second column is the end
-bdry = [(1:dT:nFrames)', [(dT:dT:nFrames) nFrames]'];
-nepoch = size(bdry, 1);
-out4 = zeros(size(mov));
-for j = 1:nepoch;
-    tau = bdry(j,1):bdry(j,2);
-    [out4(:,:,tau), ~] = SeeResiduals(dmov(:,:,tau), [dXs(tau); dYs(tau); dXs(tau).^2; dYs(tau).^2; dXs(tau) .* dYs(tau)], 1);
-end;
-
-motion_corrected = fullfile(output,'motion_corrected.bin');
-fid = fopen(motion_corrected,'w');
-fwrite(fid,single(out4),'float32');
-fclose(fid);
-
-
 %% blood removal
+
+noise_im = loadtiff(fullfile(output,'Sn_image.tif'));
+[ysize, xsize] = size(noise_im);
+
+out4 = single(vm(fullfile(output,'motion_corrected.bin'),ysize,xsize));
+
 figure(881); clf; moviefixsc(out4);
 refimg = max(out4(:,:,1000:2000),[],3);
 
