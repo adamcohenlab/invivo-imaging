@@ -33,7 +33,7 @@ stim_dir = [];...fullfile('/','matlab wvfm','PuffTE2','AOwaveforms.bin');
 trunc_start = 1; % frame to start truncated movie
 trunc_length = 6000; % length of truncated movie
 
-%% denoising and motion correction
+%% denoising
 
 run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
     home, mov_in, output, detr_spacing, row_blocks, col_blocks,...
@@ -41,7 +41,7 @@ run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" 
 
 system(run_command);
 
-%%
+%% motion correction
 moco_command = sprintf("cd ~/Projects/invivo-imaging-develop\n sbatch motion_correction.run ""%s"" ""%s""",...
     home,output);
 system(moco_command);
