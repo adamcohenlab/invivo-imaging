@@ -41,6 +41,11 @@ run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" 
 
 system(run_command);
 
+%%
+moco_command = sprintf("cd ~/Projects/invivo-imaging-develop\n sbatch motion_correction.run ""%s"" ""%s""",...
+    home,output);
+system(moco_command);
+
 %% blood removal
 
 noise_im = loadtiff(fullfile(output,'Sn_image.tif'));

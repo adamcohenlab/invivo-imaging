@@ -25,23 +25,10 @@ if exist(fullfile(home,'reg_shifts.mat'),'file')
     [ySize, xSize, nFrames] = size(mov);
     t = 1:nFrames;
     
-    % remove DMD refresh frames
-    intens = squeeze(mean(mean(mov)));
-    figure(880);
-    intensS = intens - smooth(intens, 100);
-    plot(intensS(100:end));title('pick threshold to remove frames');pause(1)
-    Rem=input('Pick thres to remove frames   ');
-    badFrames = find(intensS < Rem);
-    mov(:,:,badFrames) = mov(:,:,badFrames - 1);
-    intens1=squeeze(mean(mean(mov)));
-    figure(880);clf;hold on
-    plot(intens,'b')
-    plot(intens1,'r');
-    
     avgImg = mean(mov,3);
     dmov = mov - avgImg;
     
-    dT = detr_spacing;
+    dT = 5000;
     % First column is the start of each epoch, second column is the end
     bdry = [(1:dT:nFrames)', [(dT:dT:nFrames) nFrames]'];
     nepoch = size(bdry, 1);
