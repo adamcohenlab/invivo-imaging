@@ -42,11 +42,21 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 		ncols = raw_mov.shape[1]
 	elif mov_in[-4:] == '.bin':
 		raw_mov = np.fromfile(data_dir + '/' + mov_in,dtype=np.int16)
-		with open(data_dir + '/experimental_parameters.txt') as file:
-			x = file.read()
-			params = [int(i) for i in re.findall(r'\d+',x)]
-		nrows = params[0]
-		ncols = params[1]
+		if os.path.isfile(data_dir + '/experimental_parameters.txt'):
+			with open(data_dir + '/experimental_parameters.txt') as file:
+				x = file.read()
+				params = [int(i) for i in re.findall(r'\d+',x)]
+			nrows = params[0]
+			ncols = params[1]
+		elif os.path.isfile(data_dir + '/camera-parameters-Flash.txt'):
+			with open(data_dir + '/camera-parameters-Flash.txt') as file:
+				x = file.read()
+				params = [int(i) for i in re.findall(r'\d+',re.findall(r'\d+\s\d+\s\d+\s\d+',x)[0])]
+			nrows = params[2]
+			ncols = params[3]
+		else:
+			raise ValueError('Parameters file must be available when loading .bin movie.')
+
 		raw_mov = np.reshape(raw_mov,(-1, nrows, ncols)).transpose(1,2,0)
 	else:
 		raise ValueError('File: ' + mov_in + ' invalid. Only .tif and .bin files supported for input.')

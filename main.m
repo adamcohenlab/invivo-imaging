@@ -12,7 +12,8 @@ addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts', 'NoRMCorre-maste
 % home = fullfile(labpath,'Data and Analysis/Electrochromic Protein/somArchon optopatch in vivo/NMFcorrection_MEX/IVOP21/2019-01-08/slice2/FOV4/161916_PuffTE2');
 
 % home = fullfile(labpath,'Labmembers','Linlin Fan','In vivo','IVOP14','2018-06-03_D24','Vol img','slice2','FOV21','184947_F');
-home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC1R1/2018-11-16_PC1R1-S1/slice1/FOV3/131943_FreeRun_Dilas-8V_488-OD1.0-Mask0-Pos22';
+% home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC1R1/2018-11-16_PC1R1-S1/slice1/FOV3/131943_FreeRun_Dilas-8V_488-OD1.0-Mask0-Pos22';
+home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC3R1/2019-03-27_PC3R1-S3/FOV1/190327152942_FreeRun90_8V';
 
 output = fullfile(home,'PMD_output');
 if ~exist(output,'dir')
@@ -42,7 +43,7 @@ run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" 
 system(run_command);
 
 %% motion correction
-moco_command = sprintf("cd ~/Projects/invivo-imaging-develop\n sbatch motion_correction.run ""%s"" ""%s""",...
+moco_command = sprintf("cd ~/Projects/invivo-imaging\n sbatch motion_correction.run ""%s"" ""%s""",...
     home,output);
 
 system(moco_command);
