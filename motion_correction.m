@@ -19,8 +19,15 @@ if exist(fullfile(home,'reg_shifts.mat'),'file')
     dXs = smooth(dXhp, 5)';  % low-pass filter just to remove some jitter in the tracking.  Not sure if necessary
     dYs = smooth(dYhp, 5)';
     
+    tic;
+    while(~exist(fullfile(output,'PMD_residual.tif'),'file'))
+        pause(30);
+        if(toc > 24 * 60)
+            exit;
+        end
+    end
     
-    % mov = load(fullfile(output,'denoised.mat'));
+    tic;
     mov = shiftdim(double(vm(fullfile(output,'denoised.tif'))),2);
     [ySize, xSize, nFrames] = size(mov);
     t = 1:nFrames;
@@ -42,6 +49,7 @@ if exist(fullfile(home,'reg_shifts.mat'),'file')
     fid = fopen(motion_corrected,'w');
     fwrite(fid,single(out4),'float32');
     fclose(fid);
+    toc;
 end
 
 exit;
