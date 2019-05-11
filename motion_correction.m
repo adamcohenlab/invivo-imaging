@@ -19,10 +19,11 @@ if exist(fullfile(home,'reg_shifts.mat'),'file')
     dXs = smooth(dXhp, 5)';  % low-pass filter just to remove some jitter in the tracking.  Not sure if necessary
     dYs = smooth(dYhp, 5)';
     
-    tic;
+    tStart = tic;
     while(~exist(fullfile(output,'PMD_residual.tif'),'file'))
         pause(30);
-        if(toc > 24 * 60)
+        if(toc(tStart) > 5 * 60 * 60)
+            display(sprintf('Timed out after %.3f s.', toc(tStart)));
             exit;
         end
     end

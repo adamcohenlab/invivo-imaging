@@ -52,8 +52,8 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 			with open(data_dir + '/camera-parameters-Flash.txt') as file:
 				x = file.read()
 				params = [int(i) for i in re.findall(r'\d+',re.findall(r'\d+\s\d+\s\d+\s\d+',x)[0])]
-			nrows = params[2]
-			ncols = params[3]
+			nrows = params[3]
+			ncols = params[2]
 		else:
 			raise ValueError('Parameters file must be available when loading .bin movie.')
 

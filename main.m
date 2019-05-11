@@ -27,8 +27,8 @@ save(fullfile(home,'reg_shifts.mat'),'reg_shifts');
 %% denoising parameters
 mov_in = "movReg.bin";
 detr_spacing = 5000;
-row_blocks = 4;
-col_blocks = 2;
+row_blocks = 2;
+col_blocks = 4;
 stim_dir = [];...fullfile('/','matlab wvfm','PuffTE2','AOwaveforms.bin');
     
 trunc_start = 1; % frame to start truncated movie
