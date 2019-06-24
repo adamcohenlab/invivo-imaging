@@ -324,8 +324,8 @@ if not os.path.isfile(out_dir + '/denoised.tif'):
 	start = time.time()
 
 	imio.imsave(out_dir + '/denoised.tif',Y_den)
-	#io.savemat(out_dir + '/denoised.mat',{'denoised':mov_denoised})
-	# imio.imsave(out_dir + '/PMD_residual.tif',Y - Y_den)
+	# io.savemat(out_dir + '/denoised.mat',{'denoised':mov_denoised})
+	imio.imsave(out_dir + '/PMD_residual.tif',np.mean(Y - Y_den,axis=2))
 	# np.save(out_dir + '/block_ranks.npy', block_ranks)
 	
 	print("Denoising Saveout took: " + str(time.time()-start) + ' sec')
