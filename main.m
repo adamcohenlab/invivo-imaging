@@ -6,16 +6,10 @@ addpath(fullfile(labpath,'Computer Code','Image Processing','NoRMCorre-master'))
 addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts', 'NoRMCorre-master'));
 
 %%
-% home = fullfile(labpath,'Labmembers/Linlin Fan/In vivo/IVOP14/2018-06-03_D24/Vol img/slice2/FOV21/185008_EW');
-% home = fullfile(labpath,'Labmembers/Linlin Fan/In vivo/IVOP21/2018-12-02/slice1/FOV6/195745_PuffTE2');
-% home = fullfile(labpath,'Labmembers/Linlin Fan/In vivo/IVOP21/2018-12-02/slice1/FOV14motion/204040_PuffTE2');
-% home = fullfile(labpath,'Data and Analysis/Electrochromic Protein/somArchon optopatch in vivo/NMFcorrection_MEX/IVOP21/2019-01-08/slice2/FOV4/161916_PuffTE2');
-
-% home = fullfile(labpath,'Labmembers','Linlin Fan','In vivo','IVOP14','2018-06-03_D24','Vol img','slice2','FOV21','184947_F');
-% home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC1R1/2018-11-16_PC1R1-S1/slice1/FOV3/131943_FreeRun_Dilas-8V_488-OD1.0-Mask0-Pos22';
-home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC3R1/2019-03-27_PC3R1-S3/FOV1/190327152942_FreeRun90_8V';
+home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC5-X/2019-05-30_PC5-X-S5/FOV2/190530150538_FreeRun90_10V';
 
 output = fullfile(home,'PMD_output');
+
 if ~exist(output,'dir')
     mkdir(output)
 end
@@ -31,8 +25,8 @@ row_blocks = 2;
 col_blocks = 4;
 stim_dir = [];...fullfile('/','matlab wvfm','PuffTE2','AOwaveforms.bin');
     
-trunc_start = 1; % frame to start truncated movie
-trunc_length = 6000; % length of truncated movie
+trunc_start = 3000; % frame to start denoising
+trunc_length = 6000; % length of movie segment to denoise on
 
 %% denoising
 
@@ -62,7 +56,7 @@ out4 = reshape(tmp, [ysize xsize L]);
 clear('tmp');
 display(sprintf('Movie loaded successfully. Elapsed time : %.3f s.', toc(tStart)));
 
-figure(881); clf; moviefixsc(out4);
+figure(881); clf; moviefixsc(out4(:,:,5000:15000)-smoothdata(out4(:,:,5000:15000),3,'movmean',50));
 refimg = max(out4(:,:,1000:2000),[],3);
 
 nframes = size(out4, 3);

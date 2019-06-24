@@ -3,10 +3,10 @@
 #SBATCH -o denoise.out
 #SBATCH -e denoise.err
 #SBATCH -N 1
-#SBATCH -c 8
-#SBATCH -t 0-24:00
+#SBATCH -c 50
+#SBATCH -t 0-6:00
 #SBATCH -p serial_requeue
-#SBATCH --mem=128000
+#SBATCH --mem=256000
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 srun -c $SLURM_CPUS_PER_TASK python denoise.py "$1" "$2" "$3" $4 $5 $6 $7 $8 "$9"

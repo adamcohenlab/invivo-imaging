@@ -223,6 +223,40 @@ def threshold_data(Yd, th=2):
 			Yt[:,:,i] = np.clip(array[:,:,i], a_min = (Yd_median + th*Yd_mad)[:,:,0], a_max = None) - (Yd_median + th*Yd_mad)[:,:,0]
 	return Yt
 
+def hp_filt_data(Yd, spacing=101):
+	""" 
+	Highpass filter data: in each pixel, retain only the high frequency components
+ 
+	Parameters:
+	----------------
+	Yd: 3d np.darray: dimension d1 x d2 x T
+		denoised data
+
+	Return:
+	----------------
+	Yhp: 3d np.darray: dimension d1 x d2 x T
+		highpass filtered data
+
+	""" 
+	if spacing % 2 == 0:
+		spacing = spacing - 1;
+
+	dims = Yd.shape;
+	Ys = np.zeros(dims);
+	Yhp = np.zeros(dims);
+
+	for i in range(dims[0]):
+		for j in range(dims[1]):
+			tmp2 = np.convolve(Yd[i,j,:],np.ones(spacing,dtype=int),'valid')/spacing
+			r = np.arange(1,spacing-1,2)
+			tmp1 = np.cumsum(Yd[i,j,:spacing-1])[::2]/r
+			tmp3 = (np.cumsum(Yd[i,j,:-spacing:-1])[::2]/r)[::-1]
+			Ys[i,j,:] = np.concatenate((tmp1,tmp2,tmp3))
+
+	Yhp = Yd - Ys;
+
+	return Yhp
+
 def find_superpixel(Yt, cut_off_point, length_cut, length_max, eight_neighbours=True):
 	"""
 	Find superpixels in Yt.  For each pixel, calculate its correlation with neighborhood pixels.  
@@ -2269,7 +2303,7 @@ def update_AC_l2_Y(U, normalize_factor, a, c, b, patch_size, corr_th_fix,
 def update_AC_bg_l2_Y(U, normalize_factor, a, c, b, ff, fb, patch_size, corr_th_fix, 
 			maxiter=50, tol=1e-8, update_after=None,merge_corr_thr=0.5,
 			merge_overlap_thr=0.7, num_plane=1, plot_en=False,
-			max_allow_neuron_size=0.2):
+			max_allow_neuron_size=0.2,keep_shape=False):
 
 	K = c.shape[1];
 	res = np.zeros(maxiter);
@@ -2309,7 +2343,7 @@ def update_AC_bg_l2_Y(U, normalize_factor, a, c, b, ff, fb, patch_size, corr_th_
 
 		b = np.maximum(0, uv_mean-(a*(c.mean(axis=0,keepdims=True))).sum(axis=1,keepdims=True));
 
-		if update_after and ((iters+1) % update_after == 0):
+		if (not keep_shape) and update_after and ((iters+1) % update_after == 0):
 			corr_img_all = vcorrcoef_Y(U/normalize_factor, c);
 			rlt = merge_components_Y(a,c,corr_img_all, U, normalize_factor,num_list,patch_size,merge_corr_thr=merge_corr_thr,merge_overlap_thr=merge_overlap_thr,plot_en=plot_en);
 			flag = isinstance(rlt, int);

@@ -85,9 +85,18 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 	if len(sys.argv) <= 9 or sys.argv[9] == '':
 		raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
 	else:
-		wf = np.fromfile(data_dir + sys.argv[9],dtype="float64")
-		raw_stim = (wf.newbyteorder().reshape(2,-1))[0,::10]
-		raw_stim = raw_stim[100:]
+		wf_path = sys.argv[9]
+		if wf_path[-4:] == '.bin':
+			wf = np.fromfile(data_dir + sys.argv[9],dtype="float64")
+			raw_stim = (wf.newbyteorder().reshape(2,-1))[0,::10]
+			raw_stim = raw_stim[100:]
+		elif wf_path[-4:] == '.mat':
+			wf = io.loadmat(data_dir + sys.argv[9])
+			wf = wf['BlueWF'][0]
+			raw_stim = wf[::10]
+			raw_stim = raw_stim[101:]
+		else:
+			raise ValueError('Waveform file must be MAT or BIN.')
 
 	outliers = False # outliers already removed
 	print('Trimmed movie loaded\n')
@@ -115,7 +124,7 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 						  (fov_height, fov_width, 1)))
 	mov_detr_nnorm = mov_detr_nnorm / Sn_image
 
-	imio.imsave(out_dir + "/detr.tif", mov_detr)
+	# imio.imsave(out_dir + "/detr.tif", mov_detr)
 	imio.imsave(out_dir + "/detr_nnorm.tif", mov_detr_nnorm)
 	imio.imsave(out_dir + "/Sn_image.tif", Sn_image)
 	imio.imsave(out_dir + "/trend.tif", mov - mov_detr)
@@ -316,16 +325,16 @@ if not os.path.isfile(out_dir + '/denoised.tif'):
 
 	imio.imsave(out_dir + '/denoised.tif',Y_den)
 	#io.savemat(out_dir + '/denoised.mat',{'denoised':mov_denoised})
-	imio.imsave(out_dir + '/PMD_residual.tif',Y - Y_den)
+	# imio.imsave(out_dir + '/PMD_residual.tif',Y - Y_den)
 	# np.save(out_dir + '/block_ranks.npy', block_ranks)
 	
 	print("Denoising Saveout took: " + str(time.time()-start) + ' sec')
 else:
-	Y_den = imio.imread(out_dir + '/denoised.tif')
-	d1,d2,T = Y_den.shape
+	# Y_den = imio.imread(out_dir + '/denoised.tif')
+	# d1,d2,T = Y_den.shape
 	print('Denoised movie loaded\n')
 if T > 15000 and (not os.path.isfile(out_dir + '/denoised_15s.tif')):
-	imio.imsave(out_dir + '/denoised_15s.tif',Y_den[:,:,:15000])# * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
+	# imio.imsave(out_dir + '/denoised_15s.tif',Y_den[:,:,:15000])# * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
 	print('Denoised snippet saved\n')
 
 
