@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -J denoise
-#SBATCH -o denoise.out
-#SBATCH -e denoise.err
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
 #SBATCH -N 1
-#SBATCH -c 50
+#SBATCH -c 10
 #SBATCH -t 0-6:00
 #SBATCH -p serial_requeue
 #SBATCH --mem=256000

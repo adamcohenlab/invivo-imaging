@@ -34,7 +34,7 @@ trunc_start = int(sys.argv[7])
 trunc_length = int(sys.argv[8])
 trunc_end = trunc_start + trunc_length
 
-if not os.path.isfile(out_dir + '/detr.tif'):
+if not os.path.isfile(out_dir + '/detr_nnorm.tif'):
 	if mov_in[-4:] == '.tif':
 	# load movie from tif
 		raw_mov = imio.imread(data_dir + '/' + mov_in).transpose(1,2,0)
@@ -112,7 +112,9 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 
 	start = time.time()
 
-	mov_detr, trend, stim, disc_idx = detrend(mov, stim, disc_idx.squeeze(), visualize=None, spacing=detr_spacing)
+	mov_nopbleach, trend, stim, disc_idx = detrend(mov, stim, disc_idx.squeeze(), visualize=None, spacing=detr_spacing)
+	mov_detr = mov_nopbleach;
+	# mov_detr, subthr, stim, disc_idx = detrend(mov_nopbleach, stim, disc_idx.squeeze(), visualize=None, spacing=50)
 
 	print("Detrending took: " + str(time.time()-start) + ' sec\n')
 
@@ -127,11 +129,13 @@ if not os.path.isfile(out_dir + '/detr.tif'):
 	# imio.imsave(out_dir + "/detr.tif", mov_detr)
 	imio.imsave(out_dir + "/detr_nnorm.tif", mov_detr_nnorm)
 	imio.imsave(out_dir + "/Sn_image.tif", Sn_image)
-	imio.imsave(out_dir + "/trend.tif", mov - mov_detr)
+	imio.imsave(out_dir + "/trend.tif", trend)
+	# imio.imsave(out_dir + "/subthr.tif", subthr)
 	print("Detrended movies saved\n")
 else:
 	mov_detr_nnorm = imio.imread(out_dir + '/detr_nnorm.tif')
 	Sn_image = imio.imread(out_dir + "/Sn_image.tif")
+	# subthr = imio.imread(out_dir + "/subthr.tif")
 	print("Detrended movies loaded\n")
 
 if not os.path.isfile(out_dir + '/denoised.tif'):
@@ -318,6 +322,8 @@ if not os.path.isfile(out_dir + '/denoised.tif'):
 
 	# Normalize Movie With recombination weights
 	Y_den /= cumulative_weights[:,:,None]
+
+	# Y_den = np.add(Y_den,subthr / Sn_image)
 	
 	print("Denoising took: " + str(time.time()-start) + ' sec')
 
@@ -329,13 +335,5 @@ if not os.path.isfile(out_dir + '/denoised.tif'):
 	# np.save(out_dir + '/block_ranks.npy', block_ranks)
 	
 	print("Denoising Saveout took: " + str(time.time()-start) + ' sec')
-else:
-	# Y_den = imio.imread(out_dir + '/denoised.tif')
-	# d1,d2,T = Y_den.shape
-	print('Denoised movie loaded\n')
-if T > 15000 and (not os.path.isfile(out_dir + '/denoised_15s.tif')):
-	# imio.imsave(out_dir + '/denoised_15s.tif',Y_den[:,:,:15000])# * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
-	print('Denoised snippet saved\n')
-
 
 print('Finished\n')

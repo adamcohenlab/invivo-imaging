@@ -2330,6 +2330,7 @@ def update_AC_bg_l2_Y(U, normalize_factor, a, c, b, ff, fb, patch_size, corr_th_
 		temp = (a.sum(axis=0) == 0);
 		if sum(temp):
 			a, c, corr_img_all_r, mask_a, num_list = delete_comp(a, c, corr_img_all_r, mask_a, num_list, temp, "zero a!", plot_en);		
+
 		b = np.maximum(0, uv_mean-(a*(c.mean(axis=0,keepdims=True))).sum(axis=1,keepdims=True));
 
 		temp = ls_solve_acc_Y(np.hstack((a,fb)), U-b, mask=None, beta_LS=np.hstack((c,ff))).T;	
