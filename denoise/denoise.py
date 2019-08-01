@@ -94,7 +94,7 @@ if not os.path.isfile(out_dir + '/detr_nnorm.tif'):
 			wf = io.loadmat(data_dir + sys.argv[9])
 			wf = wf['BlueWF'][0]
 			raw_stim = wf[::10]
-			raw_stim = raw_stim[101:]
+			raw_stim = raw_stim[100:]
 		else:
 			raise ValueError('Waveform file must be MAT or BIN.')
 
