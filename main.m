@@ -2,7 +2,7 @@ labpath = '/n/cohen_lab/Lab';
 
 addpath(fullfile(labpath,'Labmembers','Michael Xie','in vivo data processing','quivvia','lib'));
 addpath(fullfile(labpath,'Computer Code','Image Processing'));
-addpath(fullfile(labpath,'Computer Code','Image Processing','NoRMCorre-master'));
+addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts'));
 addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts', 'NoRMCorre-master'));
 
 %%
@@ -13,6 +13,13 @@ output = fullfile(home,'PMD_output');
 if ~exist(output,'dir')
     mkdir(output)
 end
+
+%% NoRMCorre image registration
+mov=readBinMov4(fullfile(home,'frames')); % read in original movie
+movReg=NoRMCorre2(mov); % get registered movie
+clear mov
+savebin2(movReg,fullfile(home,'movReg.bin')); % save registered movie
+clear movReg
 
 %% extract motion traces into MAT file
 reg_shifts = returnShifts(home);
