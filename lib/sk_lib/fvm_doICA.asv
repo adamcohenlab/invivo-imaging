@@ -1,0 +1,35 @@
+function [q] = fvm_doICA(p,s)
+%FVM_DOICA do pca on a filtered movie
+%   make settings s using makeICAsettings.m
+q=ICAobj;
+%% do ICA on HP filtered movie
+if isempty(s.pkeep)
+    p_keep = 1:p.npc;
+else
+    p_keep = s.pkeep;
+end
+
+ %Aplha is the ratio between spatial and Temporal ICA (0 = only space, 0.99 = only time):
+
+[icsFilter,icsFootprint,icsTime,nICs,mixmat,sepmat,extra] = vmICA(p.uvm(:,:,p_keep),p.d(p_keep),p.v(:,p_keep),s.nic,s.alpha,p.parent.tvec);
+VT = (p.more.vnp);
+tracesnp = sepmat*vnewT(p_keep,:);
+
+%%
+q.parent = p;
+q.set = s;
+q.more = extra;
+q.filters = icsFilter;
+q.footprints = icsFootprint;
+q.traces = icsTime;
+q.nics = nICs;
+q.mixmat = mixmat;
+q.sepmat = sepmat;
+
+if isempty(p.ICAobj)
+    p.ICAobj = q;
+else
+    p.ICAobj(end+1) = q;
+end
+
+end
