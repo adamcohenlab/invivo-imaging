@@ -1,6 +1,8 @@
 # General Dependencies
-import timeit, os
+import timeit, os, sys, re
 import numpy as np
+import scipy
+import trefide.pmd
 import scipy.io as io
 
 # Preprocessing Dependencies
@@ -20,14 +22,81 @@ from trefide.preprocess import flag_outliers, detrend
 
 from skimage import io as imio
 
-import time
+import time, math
 
-data_dir = '../data/'
+data_dir = sys.argv[1]
+out_dir = sys.argv[3]
+mov_in = sys.argv[2]
+detr_spacing = int(sys.argv[4])
+rblocks = int(sys.argv[5])
+cblocks = int(sys.argv[6])
+trunc_start = int(sys.argv[7])
+trunc_length = int(sys.argv[8])
+trunc_end = trunc_start + trunc_length
 
-if not os.path.isfile(data_dir + 'detr.tif'):
+if not os.path.isfile(out_dir + '/detr_nnorm.tif'):
+	if mov_in[-4:] == '.tif':
 	# load movie from tif
-	raw_mov = imio.imread(data_dir + 'trimmed.tif').transpose(1,2,0)
-	raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
+		raw_mov = imio.imread(data_dir + '/' + mov_in).transpose(1,2,0)
+		nrows = raw_mov.shape[0]
+		ncols = raw_mov.shape[1]
+	elif mov_in[-4:] == '.bin':
+		raw_mov = np.fromfile(data_dir + '/' + mov_in,dtype=np.int16);
+		if os.path.isfile(data_dir + '/experimental_parameters.txt'):
+			with open(data_dir + '/experimental_parameters.txt') as file:
+				x = file.read()
+				params = [int(i) for i in re.findall(r'\d+',x)]
+			nrows = params[0]
+			ncols = params[1]
+		elif os.path.isfile(data_dir + '/camera-parameters-Flash.txt'):
+			with open(data_dir + '/camera-parameters-Flash.txt') as file:
+				x = file.read()
+				params = [int(i) for i in re.findall(r'\d+',re.findall(r'\d+\s\d+\s\d+\s\d+',x)[0])]
+			nrows = params[3]
+			ncols = params[2]
+		else:
+			raise ValueError('Parameters file must be available when loading .bin movie.')
+
+		raw_mov = np.reshape(raw_mov,(-1, nrows, ncols)).transpose(1,2,0)
+	else:
+		raise ValueError('File: ' + mov_in + ' invalid. Only .tif and .bin files supported for input.')
+
+	######## PUT MOVIE TRIMMING HERE #######
+
+	row_cut_lower = math.floor((nrows % (2 * rblocks))/2)
+	row_cut_upper = raw_mov.shape[0]-math.ceil((nrows % (2 * rblocks))/2)
+	col_cut_lower = math.floor((ncols % (2 * cblocks))/2)
+	col_cut_upper = raw_mov.shape[1]-math.ceil((ncols % (2 * cblocks))/2)
+	raw_mov = raw_mov[row_cut_lower:row_cut_upper,col_cut_lower:col_cut_upper,:]
+
+	intens = np.squeeze(np.mean(np.mean(raw_mov,axis=1),axis=0))
+	intensS = np.cumsum(intens,dtype=float)
+	intensS[20:] = intensS[20:] - intensS[:-20]
+	intensS = intensS[100:] / 20
+	intensS = intens[100:] / intensS
+	badFrames = np.where(intensS <= 0.991)
+	
+	raw_mov = raw_mov[:,:,100:]
+	for i in badFrames:
+		raw_mov[:,:,i] = raw_mov[:,:,i-1]
+
+	print('Movie size: {0}\n'.format(raw_mov.shape))
+
+	if len(sys.argv) <= 9 or sys.argv[9] == '':
+		raw_stim = 10 * np.ones(raw_mov.shape[2]) # simulate stimulation values for in vivo data
+	else:
+		wf_path = sys.argv[9]
+		if wf_path[-4:] == '.bin':
+			wf = np.fromfile(data_dir + sys.argv[9],dtype="float64")
+			raw_stim = (wf.newbyteorder().reshape(2,-1))[0,::10]
+			raw_stim = raw_stim[100:]
+		elif wf_path[-4:] == '.mat':
+			wf = io.loadmat(data_dir + sys.argv[9])
+			wf = wf['BlueWF'][0]
+			raw_stim = wf[::10]
+			raw_stim = raw_stim[100:]
+		else:
+			raise ValueError('Waveform file must be MAT or BIN.')
 
 	outliers = False # outliers already removed
 	print('Trimmed movie loaded\n')
@@ -43,7 +112,9 @@ if not os.path.isfile(data_dir + 'detr.tif'):
 
 	start = time.time()
 
-	mov_detr, trend, stim, disc_idx = detrend(mov, stim, disc_idx.squeeze(), visualize=None, spacing=5000)
+	mov_nopbleach, trend, stim, disc_idx = detrend(mov, stim, disc_idx.squeeze(), visualize=None, spacing=detr_spacing)
+	mov_detr = mov_nopbleach;
+	# mov_detr, subthr, stim, disc_idx = detrend(mov_nopbleach, stim, disc_idx.squeeze(), visualize=None, spacing=50)
 
 	print("Detrending took: " + str(time.time()-start) + ' sec\n')
 
@@ -55,130 +126,214 @@ if not os.path.isfile(data_dir + 'detr.tif'):
 						  (fov_height, fov_width, 1)))
 	mov_detr_nnorm = mov_detr_nnorm / Sn_image
 
-	imio.imsave(data_dir + "detr.tif", mov_detr)
-	imio.imsave(data_dir + "detr_nnorm.tif", mov_detr_nnorm)
-	imio.imsave(data_dir + "Sn_image.tif", Sn_image)
-	imio.imsave(data_dir + "trend.tif", mov - mov_detr)
+	# imio.imsave(out_dir + "/detr.tif", mov_detr)
+	imio.imsave(out_dir + "/detr_nnorm.tif", mov_detr_nnorm)
+	imio.imsave(out_dir + "/Sn_image.tif", Sn_image)
+	imio.imsave(out_dir + "/trend.tif", trend)
+	# imio.imsave(out_dir + "/subthr.tif", subthr)
 	print("Detrended movies saved\n")
 else:
-	mov_detr_nnorm = imio.imread(data_dir + 'detr_nnorm.tif')
-	Sn_image = imio.imread(data_dir + "Sn_image.tif")
+	mov_detr_nnorm = imio.imread(out_dir + '/detr_nnorm.tif')
+	Sn_image = imio.imread(out_dir + "/Sn_image.tif")
+	# subthr = imio.imread(out_dir + "/subthr.tif")
 	print("Detrended movies loaded\n")
 
-if not os.path.isfile(data_dir + 'denoised.tif'):
-	def compute_thresh(samples, conf=5):
-		return np.percentile(samples, conf)
-	def tv_norm(image):
-		return np.sum (np.abs(image[:,:-1] - image[:,1:])) + np.sum(np.abs(image[:-1,:] - image[1:,:]))
+if not os.path.isfile(out_dir + '/denoised.tif'):
+	Y = mov_detr_nnorm
+	d1, d2, T = Y.shape
+	t = trunc_length;
 
-	def spatial_test_statistic(component):
-		d1, d2 = component.shape
-		return (tv_norm(component) *d1*d2)/ (np.sum(np.abs(component)) * (d1*(d2-1) + d2 * (d1-1)))
+	# Specify Decomp Parameters
+	bheight = 	int(d1 / rblocks)
+	hbheight = int(bheight / 2)
+	bwidth = int(d2 / cblocks)
+	hbwidth = int(bwidth / 2)
+	max_comp = 30
 
-	def temporal_test_statistic(signal):
-		return np.sum(np.abs(signal[2:] + signal[:-2] - 2*signal[1:-1])) / np.sum(np.abs(signal))
-	def determine_thresholds(mov_dims, block_dims, num_components, conf=5, plot=False):
-		
-		# Simulate Noise Movie
-		noise_mov = np.ascontiguousarray(np.reshape(np.random.randn(np.prod(mov_dims)), mov_dims))
-		
-		# Perform Blockwise PMD Of Noise Matrix In Parallel
-		spatial_components,\
-		temporal_components,\
-		block_ranks,\
-		block_indices = batch_decompose(mov_dims[0], mov_dims[1], mov_dims[2],
-										noise_mov, block_dims[0], block_dims[1],
-										1e3, 1e3,
-										num_components, consec_failures,
-										max_iters_main, max_iters_init, tol,
-										d_sub=d_sub, t_sub=t_sub)
-		
-		# Gather Test Statistics
-		spatial_stat = []
-		temporal_stat = []
-		num_blocks = int((mov_dims[0] / block_dims[0]) * (mov_dims[1] / block_dims[1]))
-		for block_idx in range(num_blocks): 
-			for k in range(int(block_ranks[block_idx])):
-				spatial_stat.append(spatial_test_statistic(spatial_components[block_idx,:,:,k]))
-				temporal_stat.append(temporal_test_statistic(temporal_components[block_idx,k,:]))
+	def eval_spatial_stat(u):
+		tmp1 = np.abs(u[1:,:] - u[:-1,:])
+		tmp2 = np.abs(u[:,1:] - u[:,:-1])
+		return (((np.sum(tmp1) + np.sum(tmp2)) * np.prod(u.shape)) / 
+				((np.prod(tmp1.shape) + np.prod(tmp2.shape)) * np.sum(np.abs(u))))
 
-		# Compute Thresholds
-		spatial_thresh = compute_thresh(spatial_stat, conf=conf)
-		temporal_thresh = compute_thresh(temporal_stat, conf=conf)
-		
-		if plot:
-			fig, ax = plt.subplots(2,2,figsize=(8,8))
-			ax[0,0].scatter(spatial_stat, temporal_stat, marker='x', c='r', alpha = .2)
-			ax[0,0].axvline(spatial_thresh)
-			ax[0,0].axhline(temporal_thresh)
-			ax[0,1].hist(temporal_stat, bins=20, color='r')
-			ax[0,1].axvline(temporal_thresh)
-			ax[0,1].set_title("Temporal Threshold: {}".format(temporal_thresh))
-			ax[1,0].hist(spatial_stat, bins=20, color='r')
-			ax[1,0].axvline(spatial_thresh)
-			ax[1,0].set_title("Spatial Threshold: {}".format(spatial_thresh))
-			plt.show()
-		
-		return spatial_thresh, temporal_thresh
-	tol = 5e-3
+	def eval_temporal_stat(v):
+		return np.sum(np.abs(v[:-2] + v[2:] - 2*v[1:-1])) / np.sum(np.abs(v))
 
-	mov = mov_detr_nnorm
-
-	fov_height, fov_width, num_frames = mov.shape
-	num_pixels = fov_height * fov_width
-
-	blocks = io.loadmat(data_dir + 'num_blocks.mat')
-	blocks = blocks['var'][0]
-	block_height = int(fov_height / blocks[0])
-	block_width = int(fov_width / blocks[1])
-	max_components = 50
-	max_iters_main = 10
-	max_iters_init = 40
-	consec_failures = 3
-	d_sub=1
-	t_sub=1
+	num_blocks = rblocks * cblocks
+	num_comps = 3
+	num_samples = 240
+	num_repeats = int(num_samples / (num_blocks * num_comps))
 
 	start = time.time()
 
-	spatial_thresh, temporal_thresh = determine_thresholds((fov_height, fov_width, num_frames),
-														   (block_height, block_width),
-														   consec_failures, conf=5, plot=False)
+	# Iteratively Simulate & Fit Noise To Collect Samples
+	spatial_stats = []
+	temporal_stats = []
+
+	for rep in range(num_repeats):
+		
+		# Generate Noise Movie Of NumSimul Blocks
+		Y_sim = np.reshape(np.random.randn(num_blocks*bwidth*bheight*t),
+							(bheight, num_blocks*bwidth, t))
+
+		# Run Denoiser W/ Max Comp 3 and absurdly large thresholds
+		out = trefide.pmd.batch_decompose(bheight, num_blocks*bwidth, t,
+											Y_sim, bheight, bwidth,
+											1e5, 1e5, 
+											num_comps, 3, 10, 40, 5e-3)
+	
+		# Collect Test Statistics On All Samples
+		for bdx in range(num_blocks):
+			for cdx in range(num_comps):
+				spatial_stats.append(eval_spatial_stat(out[0][bdx,cdx]))
+				temporal_stats.append(eval_temporal_stat(out[1][bdx,cdx]))
+
+	spatial_stats = np.array(spatial_stats)
+	temporal_stats = np.array(temporal_stats)
+
+	conf = .95
+
+	# Compute Thresholds
+	spatial_thresh =  np.percentile(spatial_stats, conf)
+	temporal_thresh = np.percentile(temporal_stats, conf)
 
 	print("Simulation took: " + str(time.time()-start) + ' sec')
 
 	start = time.time()
 
-	# Perform 4x Overlapping Blockwise PMD In Parallel
-	spatial_components,\
-	temporal_components,\
-	block_ranks,\
-	block_indices,\
-	block_weights = overlapping_batch_decompose(fov_height, fov_width, num_frames,
-												mov, block_height, block_width,
-												spatial_thresh, temporal_thresh,
-												max_components, consec_failures,
-												max_iters_main, max_iters_init, tol,
-												d_sub=d_sub, t_sub=t_sub)
+	outs = []
 
-	# Use Compressed Components To Reconstruct Denoise Video
-	mov_denoised = np.asarray(overlapping_batch_recompose(fov_height, fov_width, num_frames,
-														  block_height, block_width,
-														  spatial_components,
-														  temporal_components,
-														  block_ranks,
-														  block_indices,
-														  block_weights)) 
+	#Run on standard tiling
+	Y_tmp = np.ascontiguousarray(Y[:,:,trunc_start:trunc_end])
+	outs.append(trefide.pmd.batch_decompose(d1, d2, t,
+											Y_tmp, bheight, bwidth,
+											spatial_thresh, temporal_thresh,
+											max_comp, 3, 40, 40, 5e-3))
 
+	#Run again on vertical offset
+	Y_tmp = np.ascontiguousarray(Y[hbheight:-hbheight,:,trunc_start:trunc_end])
+	outs.append(trefide.pmd.batch_decompose(d1-bheight, d2, t,
+											Y_tmp, bheight, bwidth,
+											spatial_thresh, temporal_thresh, 
+											max_comp, 3, 40, 40, 5e-3))
+
+	#Run again on horizontal offset
+	Y_tmp = np.ascontiguousarray(Y[:,hbwidth:-hbwidth,trunc_start:trunc_end])
+	outs.append(trefide.pmd.batch_decompose(d1, d2-bwidth, t,
+											Y_tmp, bheight, bwidth,
+											spatial_thresh, temporal_thresh, 
+											max_comp, 3, 40, 40, 5e-3))
+
+	# Run again on diagonal offset
+	Y_tmp = np.ascontiguousarray(Y[hbheight:-hbheight,hbwidth:-hbwidth,trunc_start:trunc_end])
+	outs.append(trefide.pmd.batch_decompose(d1-bheight, d2-bwidth, t,
+											Y_tmp, bheight, bwidth,
+											spatial_thresh, temporal_thresh, 
+											max_comp, 3, 40, 40, 5e-3))
+
+	outs = [list(out) for out in outs]
+
+	# Iterate Over Different "Offsets" Of Overlapping Decomp
+	for odx, out in enumerate(outs):
+		
+		# Determine Index Offsets Induced By Tiling
+		vertical_offset = 0 if odx % 2 == 0 else hbheight
+		horizontal_offset = 0 if odx < 2 else hbwidth
+		
+		# IMPORTANT: Appending "Full" V to original outputs, idenically formatted
+		out.append(np.zeros(out[1].shape[:-1]+(T,)))  
+
+		# Iterate Over Each Decomposed Block
+		for bdx, (rank, block_inds) in enumerate(zip(out[2], out[3])):
+			if rank > 0:
+				# Extract Rank & Compute Index w.r.t full movie
+				rank = int(rank)
+				ydx = vertical_offset + int(bheight * block_inds[0])
+				xdx = horizontal_offset + int(bwidth * block_inds[1])
+
+				# Extact Block Out From Full FOV Matching Subset Of U
+				Y_tmp = np.ascontiguousarray(
+					np.reshape(Y[ydx:ydx+bheight,xdx:xdx+bwidth,:], (-1, T))
+				)
+				U_tmp = np.ascontiguousarray(
+					np.reshape(out[0][bdx,:,:,:rank], (-1,rank)).T
+				)
+
+				# TODO: Use More Efficient Regression Method
+				out[-1][bdx,:rank,:] = np.dot(np.linalg.inv(np.dot(U_tmp, U_tmp.T)),
+												np.dot(U_tmp, Y_tmp))
+	
+	def recompose(denoiser_outputs, weights=None, temporal_index=1):
+		#Preallocate
+		bheight, bwidth = denoiser_outputs[0].shape[1:3]
+		T = denoiser_outputs[temporal_index].shape[-1]
+		nbh, nbw = np.max(denoiser_outputs[3], axis=0)
+		Y_den = np.zeros((int(nbh+1)*bheight, int(nbw+1)*bwidth, T))
+		if weights is None:
+			weights = np.ones((bheight,bwidth))
+			
+		# Accumulate Scaled Blocks
+		for bdx, (rank, block_inds) in enumerate(zip(denoiser_outputs[2],
+													 denoiser_outputs[3])):
+			if rank > 0:
+				rank = int(rank)
+				ydx = int(bheight * block_inds[0])
+				xdx = int(bwidth * block_inds[temporal_index])
+				Y_den[ydx:ydx+bheight,xdx:xdx+bwidth,:] = np.dot(
+					denoiser_outputs[0][bdx,:,:,:rank] * weights[:,:,None],
+					denoiser_outputs[temporal_index][bdx,:rank,:]
+				)
+		return Y_den
+
+	# Generate Single Quadrant Weights
+	ul_weights = np.empty((hbheight, hbwidth), dtype=np.float64)
+	for i in range(hbheight):
+		for j in range(hbwidth):
+			ul_weights[i,j] = min(i, j)+1
+
+
+	# Construct Full Tile Weights From Quadrant
+	tile_weights = np.hstack([np.vstack([ul_weights, 
+										 np.flipud(ul_weights)]),
+							  np.vstack([np.fliplr(ul_weights), 
+										 np.fliplr(np.flipud(ul_weights))])]) 
+
+	# Construct Full FOV Weights By Repeating
+	weights = np.tile(tile_weights, (int(d1/bheight), int(d2/bwidth)))
+
+	# Sum All Weights At Get FOV Pixelwise-Normalization
+	cumulative_weights = np.zeros((d1,d2))
+	cumulative_weights += weights
+	cumulative_weights[hbheight:-hbheight,:] += weights[:-bheight, :]
+	cumulative_weights[:,hbwidth:-hbwidth] += weights[:, :-bwidth]
+	cumulative_weights[hbheight:-hbheight,hbwidth:-hbwidth] += weights[:-bheight, :-bwidth]
+
+	# Compose Original Tiling
+	Y_den = recompose(outs[0], weights=tile_weights, temporal_index=-1)
+	# Add Horizontal Offset
+	Y_tmp = recompose(outs[1], weights=tile_weights, temporal_index=-1)
+	Y_den[hbheight:-hbheight,:,:] += Y_tmp
+	# Add Vertical Offset
+	Y_tmp = recompose(outs[2], weights=tile_weights, temporal_index=-1)
+	Y_den[:,hbwidth:-hbwidth,:] += Y_tmp
+	# Add Diagonal Offset
+	Y_tmp = recompose(outs[3], weights=tile_weights, temporal_index=-1)
+	Y_den[hbheight:-hbheight,hbwidth:-hbwidth,:] += Y_tmp
+
+	# Normalize Movie With recombination weights
+	Y_den /= cumulative_weights[:,:,None]
+
+	# Y_den = np.add(Y_den,subthr / Sn_image)
+	
 	print("Denoising took: " + str(time.time()-start) + ' sec')
 
-	imio.imsave(data_dir + 'denoised.tif',mov_denoised)
-	imio.imsave(data_dir + 'PMD_residual.tif',mov - mov_denoised)
-	np.save(data_dir + 'block_ranks.npy', block_ranks)
-else:
-	mov_denoised = imio.imread(data_dir + 'denoised.tif')
-	print('Denoised movie loaded\n')
-if not os.path.isfile(data_dir + 'denoised_15s.tif'):
-	imio.imsave(data_dir + 'denoised_15s.tif',mov_denoised[:,:,:15000] * np.squeeze(np.repeat(np.expand_dims(Sn_image,2),15000,axis=2)))
-	print('Denoised snippet saved\n')
+	start = time.time()
+
+	imio.imsave(out_dir + '/denoised.tif',Y_den)
+	# io.savemat(out_dir + '/denoised.mat',{'denoised':mov_denoised})
+	imio.imsave(out_dir + '/PMD_residual.tif',np.mean(Y - Y_den,axis=2))
+	# np.save(out_dir + '/block_ranks.npy', block_ranks)
+	
+	print("Denoising Saveout took: " + str(time.time()-start) + ' sec')
 
 print('Finished\n')

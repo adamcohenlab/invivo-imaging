@@ -1,8 +1,8 @@
 # invivo-imaging
 
-analysis pipeline code for in vivo voltage imaging, modified from [1]
+analysis pipeline code for in vivo voltage imaging and used in [1] (modified from [2])
 
-1.	NoRMCorre correction of x-y motion [2]
+1.	NoRMCorre correction of x-y motion [3]
 2.	Trimming edges of movie to remove pixels that entered or exited the field of view
 3.	Photobleach correction with b-spline fit
 4.	PMD denoiser with parameters optimized on simulated data
@@ -17,6 +17,8 @@ Detailed instructions for use on Harvard's Odyssey cluster: https://docs.google.
 
 References:
 
-[1] Buchanan, E. K. et al. Penalized matrix decomposition for denoising, compression, and improved demixing of functional imaging data. bioRxiv, 334706 (2018). 
+[1] Adam, Y. et al. Voltage imaging and optogenetics reveal behavior dependent changes in hippocampal dynamics. In press (2019)
 
-[2] Pnevmatikakis, E. A. & Giovannucci, A. NoRMCorre: An online algorithm for piecewise rigid motion correction of calcium imaging data. bioRxiv, 108514 (2017). 
+[2] Buchanan, E. K. et al. Penalized matrix decomposition for denoising, compression, and improved demixing of functional imaging data. bioRxiv, 334706 (2018). 
+
+[3] Pnevmatikakis, E. A. & Giovannucci, A. NoRMCorre: An online algorithm for piecewise rigid motion correction of calcium imaging data. bioRxiv, 108514 (2017). 

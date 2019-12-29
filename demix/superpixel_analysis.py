@@ -223,7 +223,41 @@ def threshold_data(Yd, th=2):
 			Yt[:,:,i] = np.clip(array[:,:,i], a_min = (Yd_median + th*Yd_mad)[:,:,0], a_max = None) - (Yd_median + th*Yd_mad)[:,:,0]
 	return Yt
 
-def find_superpixel(Yt, cut_off_point, length_cut, eight_neighbours=True):
+def hp_filt_data(Yd, spacing=101):
+	""" 
+	Highpass filter data: in each pixel, retain only the high frequency components
+ 
+	Parameters:
+	----------------
+	Yd: 3d np.darray: dimension d1 x d2 x T
+		denoised data
+
+	Return:
+	----------------
+	Yhp: 3d np.darray: dimension d1 x d2 x T
+		highpass filtered data
+
+	""" 
+	if spacing % 2 == 0:
+		spacing = spacing - 1;
+
+	dims = Yd.shape;
+	Ys = np.zeros(dims);
+	Yhp = np.zeros(dims);
+
+	for i in range(dims[0]):
+		for j in range(dims[1]):
+			tmp2 = np.convolve(Yd[i,j,:],np.ones(spacing,dtype=int),'valid')/spacing
+			r = np.arange(1,spacing-1,2)
+			tmp1 = np.cumsum(Yd[i,j,:spacing-1])[::2]/r
+			tmp3 = (np.cumsum(Yd[i,j,:-spacing:-1])[::2]/r)[::-1]
+			Ys[i,j,:] = np.concatenate((tmp1,tmp2,tmp3))
+
+	Yhp = Yd - Ys;
+
+	return Yhp
+
+def find_superpixel(Yt, cut_off_point, length_cut, length_max, eight_neighbours=True):
 	"""
 	Find superpixels in Yt.  For each pixel, calculate its correlation with neighborhood pixels.  
 	If it's larger than threshold, we connect them together.  In this way, we form a lot of connected components.
@@ -237,6 +271,8 @@ def find_superpixel(Yt, cut_off_point, length_cut, eight_neighbours=True):
 		correlation threshold
 	length_cut: double scalar
 		length threshold
+	length_max: double scalar
+		length maximum threshold
 	eight_neighbours: Boolean
 		Use 8 neighbors if true.  Defalut value is True.
 	
@@ -310,20 +346,20 @@ def find_superpixel(Yt, cut_off_point, length_cut, eight_neighbours=True):
 	connect_mat=np.zeros(np.prod(dims[:2]));
 	idx=0;
 	for comp in comps:
-		if(len(comp) > length_cut):
+		if(len(comp) > length_cut and len(comp) < length_max):
 			idx = idx+1;
 	
 	permute_col = np.random.permutation(idx)+1;
 	
 	ii=0;
 	for comp in comps:
-		if(len(comp) > length_cut):
+		if(len(comp) > length_cut and len(comp) < length_max):
 			connect_mat[list(comp)] = permute_col[ii];
 			ii = ii+1;
 	connect_mat_1 = connect_mat.reshape(dims[0],dims[1],order='F');
 	return connect_mat_1, idx, comps, permute_col
 
-def find_superpixel_3d(Yt, num_plane, cut_off_point, length_cut, eight_neighbours=True):
+def find_superpixel_3d(Yt, num_plane, cut_off_point, length_cut, length_max, eight_neighbours=True):
 	"""
 	Find 3d supervoxels in Yt.  For each pixel, calculate its correlation with neighborhood pixels.  
 	If it's larger than threshold, we connect them together.  In this way, we form a lot of connected components.
@@ -337,6 +373,8 @@ def find_superpixel_3d(Yt, num_plane, cut_off_point, length_cut, eight_neighbour
 		correlation threshold
 	length_cut: double scalar
 		length threshold
+	length_max: double scalar
+		length maximum threshold
 	eight_neighbours: Boolean
 		Use 8 neighbors in same plane if true.  Defalut value is True.
 	
@@ -416,20 +454,20 @@ def find_superpixel_3d(Yt, num_plane, cut_off_point, length_cut, eight_neighbour
 	connect_mat=np.zeros(np.prod(dims[:-1]));
 	idx=0;
 	for comp in comps:
-		if(len(comp) > length_cut):
+		if(len(comp) > length_cut and len(comp) < length_max):
 			idx = idx+1;
 	
 	permute_col = np.random.permutation(idx)+1;
 	
 	ii=0;
 	for comp in comps:
-		if(len(comp) > length_cut):
+		if(len(comp) > length_cut and len(comp) < length_max):
 			connect_mat[list(comp)] = permute_col[ii];
 			ii = ii+1;
 	connect_mat_1 = connect_mat.reshape(Yt.shape[:-1],order='F');
 	return connect_mat_1, idx, comps, permute_col
 
-def spatial_temporal_ini(Yt, comps, idx, length_cut, bg=False):
+def spatial_temporal_ini(Yt, comps, idx, length_cut, length_max, bg=False):
 	"""
 	Apply rank 1 NMF to find spatial and temporal initialization for each superpixel in Yt.
 	""" 
@@ -442,7 +480,7 @@ def spatial_temporal_ini(Yt, comps, idx, length_cut, bg=False):
 	V_mat = np.zeros([T,idx]);
 	
 	for comp in comps:
-		if(len(comp) > length_cut):
+		if(len(comp) > length_cut and len(comp) < length_max):
 			y_temp = Yt_r[list(comp),:];
 			#nmf = nimfa.Nmf(y_temp, seed="nndsvd", rank=1)
 			#nmf_fit = nmf();
@@ -1086,7 +1124,7 @@ def l1_tf(y, sigma):
 		return y
 	return np.asarray(x.value).flatten()
 
-def axon_pipeline(Yd, U, V, cut_off_point=[0.95,0.9], length_cut=[15,10], th=[2,1], pass_num=1, residual_cut = [0.6,0.6],
+def axon_pipeline(Yd, U, V, cut_off_point=[0.95,0.9], length_cut=[15,10], length_max=[100000,100000], th=[2,1], pass_num=1, residual_cut = [0.6,0.6],
 					corr_th_fix=0.31, max_allow_neuron_size=0.3, merge_corr_thr=0.6, merge_overlap_thr=0.6, num_plane=1, patch_size=[100,100],
 					plot_en=False, TF=False, fudge_factor=1, text=True, bg=False, max_iter=35, max_iter_fin=50, update_after=4):
 	"""
@@ -1108,6 +1146,8 @@ def axon_pipeline(Yd, U, V, cut_off_point=[0.95,0.9], length_cut=[15,10], th=[2,
 		correlation threshold for finding superpixels
 	length_cut: list, length = number of pass
 		size cut-off for finding superpixels
+	length_max: double scalar
+		length maximum threshold
 	th: list, length = number of pass
 		MAD threshold for soft-thresholding Yd
 	pass_num: integer
@@ -1210,18 +1250,18 @@ def axon_pipeline(Yd, U, V, cut_off_point=[0.95,0.9], length_cut=[15,10], th=[2,
 		start = time.time();
 		if num_plane > 1:
 			print("3d data!");
-			connect_mat_1, idx, comps, permute_col = find_superpixel_3d(Yt,num_plane,cut_off_point[ii],length_cut[ii],eight_neighbours=True);
+			connect_mat_1, idx, comps, permute_col = find_superpixel_3d(Yt,num_plane,cut_off_point[ii],length_cut[ii],length_max[ii],eight_neighbours=True);
 		else:
 			print("find superpixels!")
-			connect_mat_1, idx, comps, permute_col = find_superpixel(Yt,cut_off_point[ii],length_cut[ii],eight_neighbours=True);
+			connect_mat_1, idx, comps, permute_col = find_superpixel(Yt,cut_off_point[ii],length_cut[ii],length_max[ii],eight_neighbours=True);
 		print(time.time()-start);
 		
 		start = time.time();
 		print("rank 1 svd!")
 		if ii > 0:
-			c_ini, a_ini, _, _ = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], bg=False);
+			c_ini, a_ini, _, _ = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], length_max[ii], bg=False);
 		else:
-			c_ini, a_ini, ff, fb = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], bg=bg);
+			c_ini, a_ini, ff, fb = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], length_max[ii], bg=bg);
 			#return ff
 		print(time.time()-start);
 		unique_pix = np.asarray(np.sort(np.unique(connect_mat_1)),dtype="int");
@@ -1319,7 +1359,7 @@ def axon_pipeline(Yd, U, V, cut_off_point=[0.95,0.9], length_cut=[15,10], th=[2,
 	else:
 		return {'fin_rlt':fin_rlt, "superpixel_rlt":superpixel_rlt}
 
-def extract_pure_and_superpixels(Yd, cut_off_point=0.95, length_cut=15, th=2, residual_cut = 0.6, num_plane=1, patch_size=[100,100], plot_en=False, text=False):
+def extract_pure_and_superpixels(Yd, cut_off_point=0.95, length_cut=15, length_max=100000, th=2, residual_cut = 0.6, num_plane=1, patch_size=[100,100], plot_en=False, text=False):
 	"""
 	This function is only doing the superpixel initialization.
 	For parameters, please refer to axon_pipeline function.
@@ -1371,10 +1411,10 @@ def extract_pure_and_superpixels(Yd, cut_off_point=0.95, length_cut=15, th=2, re
 		Yt = Yd;
 	if num_plane > 1:
 		print("3d data!");
-		connect_mat_1, idx, comps, permute_col = find_superpixel_3d(Yt,num_plane,cut_off_point,length_cut,eight_neighbours=True);
+		connect_mat_1, idx, comps, permute_col = find_superpixel_3d(Yt,num_plane,cut_off_point,length_cut,length_max,eight_neighbours=True);
 	else:
 		print("find superpixels!")
-		connect_mat_1, idx, comps, permute_col = find_superpixel(Yt,cut_off_point,length_cut,eight_neighbours=True);
+		connect_mat_1, idx, comps, permute_col = find_superpixel(Yt,cut_off_point,length_cut,length_max,eight_neighbours=True);
 	c_ini, a_ini, _, _ = spatial_temporal_ini(Yt, comps, idx, length_cut, bg=False);
 	unique_pix = np.asarray(np.sort(np.unique(connect_mat_1)),dtype="int");
 	unique_pix = unique_pix[np.nonzero(unique_pix)];
@@ -1733,7 +1773,8 @@ def spatial_sum_plot_single(a_fin, patch_size, num_list_fin=None, text=False):
 	scale = np.maximum(1, (patch_size[1]/patch_size[0]));
 	fig = plt.figure(figsize=(4*scale,4));
 	ax = plt.subplot(1,1,1);
-	ax.imshow(a_fin.sum(axis=1).reshape(patch_size,order="F"),cmap="nipy_spectral_r");
+	image = ax.imshow(a_fin.sum(axis=1).reshape(patch_size,order="F"),cmap="nipy_spectral_r");
+	# plt.colorbar(image, ax = ax)
 	
 	if num_list_fin is None:
 		num_list_fin = np.arange(a_fin.shape[1]);
@@ -2262,7 +2303,7 @@ def update_AC_l2_Y(U, normalize_factor, a, c, b, patch_size, corr_th_fix,
 def update_AC_bg_l2_Y(U, normalize_factor, a, c, b, ff, fb, patch_size, corr_th_fix, 
 			maxiter=50, tol=1e-8, update_after=None,merge_corr_thr=0.5,
 			merge_overlap_thr=0.7, num_plane=1, plot_en=False,
-			max_allow_neuron_size=0.2):
+			max_allow_neuron_size=0.2,keep_shape=False):
 
 	K = c.shape[1];
 	res = np.zeros(maxiter);
@@ -2289,6 +2330,7 @@ def update_AC_bg_l2_Y(U, normalize_factor, a, c, b, ff, fb, patch_size, corr_th_
 		temp = (a.sum(axis=0) == 0);
 		if sum(temp):
 			a, c, corr_img_all_r, mask_a, num_list = delete_comp(a, c, corr_img_all_r, mask_a, num_list, temp, "zero a!", plot_en);		
+
 		b = np.maximum(0, uv_mean-(a*(c.mean(axis=0,keepdims=True))).sum(axis=1,keepdims=True));
 
 		temp = ls_solve_acc_Y(np.hstack((a,fb)), U-b, mask=None, beta_LS=np.hstack((c,ff))).T;	
@@ -2302,7 +2344,7 @@ def update_AC_bg_l2_Y(U, normalize_factor, a, c, b, ff, fb, patch_size, corr_th_
 
 		b = np.maximum(0, uv_mean-(a*(c.mean(axis=0,keepdims=True))).sum(axis=1,keepdims=True));
 
-		if update_after and ((iters+1) % update_after == 0):
+		if (not keep_shape) and update_after and ((iters+1) % update_after == 0):
 			corr_img_all = vcorrcoef_Y(U/normalize_factor, c);
 			rlt = merge_components_Y(a,c,corr_img_all, U, normalize_factor,num_list,patch_size,merge_corr_thr=merge_corr_thr,merge_overlap_thr=merge_overlap_thr,plot_en=plot_en);
 			flag = isinstance(rlt, int);
@@ -2346,7 +2388,7 @@ def update_AC_bg_l2_Y(U, normalize_factor, a, c, b, ff, fb, patch_size, corr_th_
 	#	print("residual relative change: " + str(abs(res[iters] - res[iters-1])/res[iters-1]));
 	return a, c, b, fb, ff, res, corr_img_all_r, num_list
 
-def axon_pipeline_Y(Yd, fb_ini=False, ff_ini=False, cut_off_point=[0.95,0.9], length_cut=[15,10], th=[2,1], pass_num=1, residual_cut = [0.6,0.6],
+def axon_pipeline_Y(Yd, fb_ini=False, ff_ini=False, cut_off_point=[0.95,0.9], length_cut=[15,10], length_max=[100000,100000], th=[2,1], pass_num=1, residual_cut = [0.6,0.6],
 					corr_th_fix=0.31, max_allow_neuron_size=0.3, merge_corr_thr=0.6, merge_overlap_thr=0.6, num_plane=1, patch_size=[100,100],
 					plot_en=False, TF=False, fudge_factor=1, text=True, bg=False, max_iter=35, max_iter_fin=50, 
 					update_after=4, sup_only=False, remove=0):
@@ -2390,18 +2432,18 @@ def axon_pipeline_Y(Yd, fb_ini=False, ff_ini=False, cut_off_point=[0.95,0.9], le
 		start = time.time();
 		if num_plane > 1:
 			print("3d data!");
-			connect_mat_1, idx, comps, permute_col = find_superpixel_3d(Yt,num_plane,cut_off_point[ii],length_cut[ii],eight_neighbours=True);
+			connect_mat_1, idx, comps, permute_col = find_superpixel_3d(Yt,num_plane,cut_off_point[ii],length_cut[ii],length_max[ii],eight_neighbours=True);
 		else:
 			print("find superpixels!")
-			connect_mat_1, idx, comps, permute_col = find_superpixel(Yt,cut_off_point[ii],length_cut[ii],eight_neighbours=True);
+			connect_mat_1, idx, comps, permute_col = find_superpixel(Yt,cut_off_point[ii],length_cut[ii],length_max[ii],eight_neighbours=True);
 		print(time.time()-start);
 		
 		start = time.time();
 		print("rank 1 svd!")
 		if ii > 0:
-			c_ini, a_ini, _, _ = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], bg=False);
+			c_ini, a_ini, _, _ = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], length_max[ii], bg=False);
 		else:
-			c_ini, a_ini, ff, fb = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], bg=bg);
+			c_ini, a_ini, ff, fb = spatial_temporal_ini(Yt, comps, idx, length_cut[ii], length_max[ii], bg=bg);
 			#return ff
 		if ff_ini.any():
 			ff = ff_ini;
