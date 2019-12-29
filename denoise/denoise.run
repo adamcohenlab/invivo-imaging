@@ -6,7 +6,7 @@
 #SBATCH -c 10
 #SBATCH -t 0-6:00
 #SBATCH -p serial_requeue
-#SBATCH --mem=300000
+#SBATCH --mem=384000
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 srun -c $SLURM_CPUS_PER_TASK python denoise.py "$1" "$2" "$3" $4 $5 $6 $7 $8 "$9"

@@ -1,11 +1,6 @@
 % clc;clearvars;close all
 
-labpath = '/n/cohen_lab/Lab';
-
-addpath(fullfile(labpath,'Labmembers','Michael Xie','in vivo data processing','quivvia','lib'));
-addpath(fullfile(labpath,'Computer Code','Image Processing'));
-addpath(fullfile(labpath,'Computer Code','Image Processing','NoRMCorre-master'));
-addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts', 'NoRMCorre-master'));
+addpath(genpath('lib'));
 
 %%
 if exist(fullfile(home,'reg_shifts.mat'),'file')
@@ -29,7 +24,7 @@ if exist(fullfile(home,'reg_shifts.mat'),'file')
     end
     
     tic;
-    mov = shiftdim(double(vm(fullfile(output,'denoised.tif'))),2);
+    mov = shiftdim(loadtiff(fullfile(output,'denoised.tif')),2);
     [ySize, xSize, nFrames] = size(mov);
     t = 1:nFrames;
     

@@ -1,39 +1,36 @@
-labpath = '/n/cohen_lab/Lab';
-
-addpath(fullfile(labpath,'Labmembers','Michael Xie','in vivo data processing','quivvia','lib'));
-addpath(fullfile(labpath,'Computer Code','Image Processing'));
-addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts'));
-addpath(fullfile(labpath, 'Labmembers', 'Yoav Adam', 'Scripts', 'NoRMCorre-master'));
+%%
+addpath(genpath('lib'));
 
 %%
-home = '/n/cohen_lab/Lab/Labmembers/Yoav Adam/Data/In Vivo/PlaceCells/PC5-X/2019-05-30_PC5-X-S5/FOV2/190530150538_FreeRun90_10V';
+home = 'demo_data';
 
-output = fullfile(home,'PMD_output');
+output = fullfile(home,'output');
 
 if ~exist(output,'dir')
     mkdir(output)
 end
 
 %% NoRMCorre image registration
-mov=readBinMov4(fullfile(home,'frames')); % read in original movie
+mov=loadtiff(fullfile(home,'raw_data.tif'));
+[nrows, ncols, nframes] = size(mov);
 movReg=NoRMCorre2(mov); % get registered movie
 clear mov
-savebin2(movReg,fullfile(home,'movReg.bin')); % save registered movie
+saveastiff(movReg,fullfile(home,'movReg.tif')); % save registered movie
 clear movReg
 
-%% extract motion traces into MAT file
+% extract motion traces into MAT file
 reg_shifts = returnShifts(home);
 save(fullfile(home,'reg_shifts.mat'),'reg_shifts');
 
 %% denoising parameters
-mov_in = "movReg.bin";
+mov_in = "movReg.tif";
 detr_spacing = 5000;
-row_blocks = 2;
-col_blocks = 4;
-stim_dir = [];...fullfile('/','matlab wvfm','PuffTE2','AOwaveforms.bin');
+row_blocks = 4;
+col_blocks = 2;
+stim_dir = []; % directory with optogenetic stimulation pattern
     
-trunc_start = 3000; % frame to start denoising
-trunc_length = 6000; % length of movie segment to denoise on
+trunc_start = 1; % frame to start denoising
+trunc_length = 5000; % length of movie segment to denoise on
 
 %% denoising
 
@@ -63,8 +60,13 @@ out4 = reshape(tmp, [ysize xsize L]);
 clear('tmp');
 display(sprintf('Movie loaded successfully. Elapsed time : %.3f s.', toc(tStart)));
 
-figure(881); clf; moviefixsc(out4(:,:,5000:15000)-smoothdata(out4(:,:,5000:15000),3,'movmean',50));
-refimg = max(out4(:,:,1000:2000),[],3);
+smoothing=100; %for high pass filter
+movHP = out4 - imfilter(out4, ones(1,1,smoothing)/smoothing, 'replicate');
+
+flucImg = mean(movHP(:,:,1:end-1).*movHP(:,:,2:end), 3);
+flucImgS = imfilter(flucImg, fspecial('gaussian', [5 5], 2), 'replicate');
+
+refimg = (flucImgS).^(0.25);
 
 nframes = size(out4, 3);
 
@@ -98,14 +100,11 @@ while(npts > 0)
     nroi = nroi + 1;
 end
 
+bloodmask = uint8(inpoly==0);
 mov = out4.*repmat(inpoly==0, [1, 1, nframes]);
-bloodmask = uint8(mean(mov,3) ~= 0);
 saveastiff(bloodmask,fullfile(output,'bloodmask.tif'));
 
 %% background selection
-refimg = max(mov(:,:,1000:2000),[],3);
-nframes = size(mov, 3);
-
 figure(883); clf;
 imshow(refimg, [], 'InitialMagnification', 'fit')
 title('click to select background')

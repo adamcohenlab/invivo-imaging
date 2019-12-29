@@ -41,7 +41,7 @@ if not os.path.isfile(out_dir + '/detr_nnorm.tif'):
 		nrows = raw_mov.shape[0]
 		ncols = raw_mov.shape[1]
 	elif mov_in[-4:] == '.bin':
-		raw_mov = np.fromfile(data_dir + '/' + mov_in,dtype=np.int16)
+		raw_mov = np.fromfile(data_dir + '/' + mov_in,dtype=np.int16);
 		if os.path.isfile(data_dir + '/experimental_parameters.txt'):
 			with open(data_dir + '/experimental_parameters.txt') as file:
 				x = file.read()
