@@ -1,6 +1,6 @@
 % clc;clearvars;close all
 
-addpath(genpath('lib'));
+addpath(genpath(fullfile(home,'..','lib')));
 
 %%
 if exist(fullfile(home,'reg_shifts.mat'),'file')
@@ -33,7 +33,8 @@ if exist(fullfile(home,'reg_shifts.mat'),'file')
     
     dT = 5000;
     % First column is the start of each epoch, second column is the end
-    bdry = [(1:dT:nFrames)', [(dT:dT:nFrames) nFrames]'];
+    if dT ~= nFrames; bdry = [(1:dT:nFrames)', [(dT:dT:nFrames) nFrames]'];
+    else; bdry = [(1:dT:nFrames)', [nFrames]']; end;
     nepoch = size(bdry, 1);
     out4 = zeros(size(mov));
     for j = 1:nepoch;
@@ -41,10 +42,7 @@ if exist(fullfile(home,'reg_shifts.mat'),'file')
         [out4(:,:,tau), ~] = SeeResiduals(dmov(:,:,tau), [dXs(tau); dYs(tau); dXs(tau).^2; dYs(tau).^2; dXs(tau) .* dYs(tau)], 1);
     end;
     
-    motion_corrected = fullfile(output,'motion_corrected.bin');
-    fid = fopen(motion_corrected,'w');
-    fwrite(fid,single(out4),'float32');
-    fclose(fid);
+    saveastiff(single(out4),fullfile(output,'motion_corrected.tif'));
     toc;
 end
 

@@ -1,8 +1,8 @@
 %%
-addpath(genpath(fullfile('..','lib'));
+addpath(genpath(fullfile(cd,'..','lib')));
 
 %%
-home = fullfile('..','demo_data');
+home = fullfile(cd,'..','demo_data');
 
 output = fullfile(home,'output');
 
@@ -13,7 +13,7 @@ end
 %% NoRMCorre image registration
 mov=loadtiff(fullfile(home,'raw_data.tif'));
 [nrows, ncols, nframes] = size(mov);
-movReg=NoRMCorre2(mov); % get registered movie
+movReg=NoRMCorre2(mov,home); % get registered movie
 clear mov
 saveastiff(movReg,fullfile(home,'movReg.tif')); % save registered movie
 clear movReg
@@ -28,7 +28,7 @@ detr_spacing = 5000;
 row_blocks = 4;
 col_blocks = 2;
 stim_dir = []; % directory with optogenetic stimulation pattern
-    
+
 trunc_start = 1; % frame to start denoising
 trunc_length = 5000; % length of movie segment to denoise on
 
@@ -48,17 +48,8 @@ system(moco_command);
 
 %% blood removal
 
-noise_im = loadtiff(fullfile(output,'Sn_image.tif'));
-[ysize, xsize] = size(noise_im);
-
-tStart = tic;
-fid = fopen(fullfile(output,'motion_corrected.bin'));                  % open file
-tmp = fread(fid, '*float32', 'l');       % uint16, little endian
-fclose(fid);                            % close file
-L = length(tmp)/(ysize*xsize);
-out4 = reshape(tmp, [ysize xsize L]);
-clear('tmp');
-display(sprintf('Movie loaded successfully. Elapsed time : %.3f s.', toc(tStart)));
+out4 = loadtiff(fullfile(output,'motion_corrected.tif')); % open file
+[ysize, xsize, ~] = size(out4);
 
 smoothing=100; %for high pass filter
 movHP = out4 - imfilter(out4, ones(1,1,smoothing)/smoothing, 'replicate');
@@ -66,7 +57,7 @@ movHP = out4 - imfilter(out4, ones(1,1,smoothing)/smoothing, 'replicate');
 flucImg = mean(movHP(:,:,1:end-1).*movHP(:,:,2:end), 3);
 flucImgS = imfilter(flucImg, fspecial('gaussian', [5 5], 2), 'replicate');
 
-refimg = (flucImgS).^(0.25);
+refimg = (flucImgS).^(0.5);
 
 nframes = size(out4, 3);
 
@@ -102,7 +93,8 @@ end
 
 bloodmask = uint8(inpoly==0);
 mov = out4.*repmat(inpoly==0, [1, 1, nframes]);
-saveastiff(bloodmask,fullfile(output,'bloodmask.tif'));
+options.overwrite=true;
+saveastiff(bloodmask,fullfile(output,'bloodmask.tif'),options);
 
 %% background selection
 figure(883); clf;
@@ -142,5 +134,5 @@ background = background - repmat(mean(background,3),[1 1 nframes]);
 ff = (V - mean(V,2));
 fb = (U * S);
 figure(884);stackplot(ff);
-saveastiff(ff,fullfile(output,'ff.tif'))
-saveastiff(fb,fullfile(output,'fb.tif'))
+saveastiff(ff,fullfile(output,'ff.tif'),options);
+saveastiff(fb,fullfile(output,'fb.tif'),options);
