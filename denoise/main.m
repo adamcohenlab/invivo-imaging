@@ -2,7 +2,7 @@
 addpath(genpath(fullfile('..','lib'));
 
 %%
-home = 'demo_data';
+home = fullfile('..','demo_data');
 
 output = fullfile(home,'output');
 
