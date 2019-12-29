@@ -1,5 +1,5 @@
 %%
-addpath(genpath('lib'));
+addpath(genpath(fullfile('..','lib'));
 
 %%
 home = 'demo_data';
@@ -34,14 +34,14 @@ trunc_length = 5000; % length of movie segment to denoise on
 
 %% denoising
 
-run_command = sprintf("cd denoise\n source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
+run_command = sprintf("source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
     home, mov_in, output, detr_spacing, row_blocks, col_blocks,...
     trunc_start-1, trunc_length, stim_dir);
 
 system(run_command);
 
 %% motion correction
-moco_command = sprintf("cd ~/Projects/invivo-imaging\n sbatch motion_correction.run ""%s"" ""%s""",...
+moco_command = sprintf("sbatch motion_correction.run ""%s"" ""%s""",...
     home,output);
 
 system(moco_command);
