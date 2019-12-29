@@ -1,6 +1,6 @@
 # invivo-imaging
 
-analysis pipeline code for in vivo voltage imaging and used in [1]
+Spike-Guided Penalized Matrix Decomposition-Non-negative Matrix Factorization (SGPMD-NMF) pipeline code for in vivo voltage imaging and used for data in [1]
 
 1.	NoRMCorre correction of x-y motion [2]
 2.	Trimming edges of movie to remove pixels that entered or exited the field of view
@@ -13,9 +13,11 @@ analysis pipeline code for in vivo voltage imaging and used in [1]
 9.	Update spatial footprint of cells and background by ensuring smoothness of background spatial components around edges of cells
 10.	Apply the updated spatial and background footprints to calculate the temporal traces from the full denoised movie
 
-Detailed instructions for use on Harvard's Odyssey cluster: https://docs.google.com/document/d/1dV4yBQQuKRmscEwlC_2DaNGKz9M_jCuN6qnOgfYe2ew/edit?usp=sharing
+## Instructions
 
-References:
+Detailed instructions for use on Harvard's Cannon cluster: https://docs.google.com/document/d/1dV4yBQQuKRmscEwlC_2DaNGKz9M_jCuN6qnOgfYe2ew/edit?usp=sharing
+
+## References
 
 [1] Adam, Y. et al. Voltage imaging and optogenetics reveal behavior dependent changes in hippocampal dynamics. Nature (2019)
 
