@@ -17,6 +17,10 @@ Spike-Guided Penalized Matrix Decomposition-Non-negative Matrix Factorization (S
 
 Detailed instructions for use on Harvard's Cannon cluster: https://docs.google.com/document/d/1dV4yBQQuKRmscEwlC_2DaNGKz9M_jCuN6qnOgfYe2ew/edit?usp=sharing
 
+## Dependencies
+
+* TREFIDE (http://github.com/ikinsella/trefide)
+
 ## References
 
 [1] Adam, Y. et al. Voltage imaging and optogenetics reveal behavior dependent changes in hippocampal dynamics. Nature (2019)
