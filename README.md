@@ -19,7 +19,7 @@ Detailed instructions for use on Harvard's Cannon cluster: https://docs.google.c
 
 ## Dependencies
 
-* TREFIDE (http://github.com/ikinsella/trefide)
+* [TREFIDE](http://github.com/ikinsella/trefide)
 
 ## References
 
