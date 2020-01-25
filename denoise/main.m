@@ -24,25 +24,36 @@ save(fullfile(home,'reg_shifts.mat'),'reg_shifts');
 
 %% denoising parameters
 mov_in = "movReg.tif";
-detr_spacing = 5000;
+detr_spacing = 5000; % in number of frames
 row_blocks = 4;
 col_blocks = 2;
-stim_dir = []; % directory with optogenetic stimulation pattern
+stim_dir = []; % directory with optogenetic stimulation pattern, if applicable
 
 trunc_start = 1; % frame to start denoising
 trunc_length = 5000; % length of movie segment to denoise on
 
 %% denoising
 
-run_command = sprintf("source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
-    home, mov_in, output, detr_spacing, row_blocks, col_blocks,...
-    trunc_start-1, trunc_length, stim_dir);
+if harvard_cannon % command for Harvard Cannon cluster
+    run_command = sprintf("source setup.sh\n sbatch denoise.run ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
+        home, mov_in, output, detr_spacing, row_blocks, col_blocks,...
+        trunc_start-1, trunc_length, stim_dir);
+else % general command
+    run_command = sprintf("source activate invivo\n python denoise.py ""%s"" ""%s"" ""%s"" %d %d %d %d %d ""%s""",...
+        home, mov_in, output, detr_spacing, row_blocks, col_blocks,...
+        trunc_start-1, trunc_length, stim_dir);
+end
 
 system(run_command);
 
 %% motion correction
-moco_command = sprintf("sbatch motion_correction.run ""%s"" ""%s""",...
-    home,output);
+if harvard_cannon % command for Harvard Cannon cluster
+    moco_command = sprintf("sbatch motion_correction.run ""%s"" ""%s""",...
+        home,output);
+else % general command
+    moco_command = sprintf("matlab -nojvm -nodisplay -nosplash -r ""home='%s';output='%s';motion_correction""",...
+        home,output);
+end
 
 system(moco_command);
 
