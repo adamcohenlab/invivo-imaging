@@ -1,6 +1,8 @@
 %%
 addpath(genpath(fullfile(cd,'..','lib')));
 
+harvard_cannon = 0;
+
 %%
 home = fullfile(cd,'..','demo_data');
 
