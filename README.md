@@ -24,4 +24,4 @@ Detailed instructions for setup on Harvard's Cannon cluster: http://bit.ly/harva
 
 ## References
 
-[1] Xie, M., Adam, Y., Fan, L., Böhm, U., Kinsella, I., Zhou, D., Paninski, L., Cohen, A. High fidelity estimates of spikes and subthreshold waveforms from 1-photon voltage imaging in vivo. Submitted (2020)
+[1] M. E. Xie, Y. Adam, L. Z. Fan, U. L. Böhm, I. Kinsella, D. Zhou, M. Rozsa, A. Singh, K. Svoboda, L. Paninski, A. E. Cohen, High-fidelity estimates of spikes and subthreshold waveforms from 1-photon voltage imaging in vivo. Cell Reports 35, 108954 (2021).
