@@ -112,9 +112,8 @@ if not os.path.isfile(out_dir + '/detr_nnorm.tif'):
 
 	start = time.time()
 
-	mov_nopbleach, trend, stim, disc_idx = detrend(mov, stim, disc_idx.squeeze(), visualize=None, spacing=detr_spacing)
+	mov_nopbleach, trend, stim, disc_idx = detrend(mov, stim, disc_idx.astype(int).squeeze(), visualize=None, spacing=detr_spacing)
 	mov_detr = mov_nopbleach;
-	# mov_detr, subthr, stim, disc_idx = detrend(mov_nopbleach, stim, disc_idx.astype(int).squeeze(), visualize=None, spacing=50)
 
 	print("Detrending took: " + str(time.time()-start) + ' sec\n')
 
